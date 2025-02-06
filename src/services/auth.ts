@@ -1,18 +1,12 @@
-import { FirebaseError } from 'firebase/app';
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut as firebaseSignOut,
-  onAuthStateChanged,
-  User,
-  GoogleAuthProvider,
-  signInWithCredential,
-} from 'firebase/auth';
-import { auth } from './firebase';
-import * as Google from 'expo-auth-session/providers/google';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { GoogleSignin, statusCodes, User } from '@react-native-google-signin/google-signin';
 import { Platform } from 'react-native';
-import { EXPO_CLIENT_ID, IOS_CLIENT_ID, ANDROID_CLIENT_ID } from '@env';
-import { persistUser, updateAuthState, clearAuthData } from './auth-persistence';
+import { ANDROID_CLIENT_ID } from '@env';
+
+// Initialize Google Sign-In
+GoogleSignin.configure({
+  webClientId: ANDROID_CLIENT_ID,
+});
 
 export interface AuthError {
   code: string;
@@ -20,88 +14,94 @@ export interface AuthError {
 }
 
 export interface AuthResponse {
-  user: User | null;
+  user: FirebaseAuthTypes.User | null;
   error: AuthError | null;
 }
 
 export const signUp = async (email: string, password: string): Promise<AuthResponse> => {
+  console.log('Starting sign up process...');
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    await persistUser(userCredential.user);
-    await updateAuthState(true);
+    const userCredential = await auth().createUserWithEmailAndPassword(email, password);
+    console.log('Sign up successful:', userCredential.user.uid);
     return { user: userCredential.user, error: null };
-  } catch (error) {
-    const firebaseError = error as FirebaseError;
+  } catch (error: any) {
+    console.error('Sign up error:', error);
     return {
       user: null,
       error: {
-        code: firebaseError.code,
-        message: firebaseError.message,
+        code: error.code || 'unknown',
+        message: error.message || 'An unknown error occurred',
       },
     };
   }
 };
 
 export const signIn = async (email: string, password: string): Promise<AuthResponse> => {
+  console.log('Starting sign in process...');
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    await persistUser(userCredential.user);
-    await updateAuthState(true);
+    const userCredential = await auth().signInWithEmailAndPassword(email, password);
+    console.log('Sign in successful:', userCredential.user.uid);
     return { user: userCredential.user, error: null };
-  } catch (error) {
-    const firebaseError = error as FirebaseError;
+  } catch (error: any) {
+    console.error('Sign in error:', error);
     return {
       user: null,
       error: {
-        code: firebaseError.code,
-        message: firebaseError.message,
+        code: error.code || 'unknown',
+        message: error.message || 'An unknown error occurred',
       },
     };
   }
 };
 
-export const signInWithGoogle = async (
-  idToken: string
-): Promise<AuthResponse> => {
+export const signInWithGoogle = async (): Promise<AuthResponse> => {
   try {
-    const credential = GoogleAuthProvider.credential(idToken);
-    const userCredential = await signInWithCredential(auth, credential);
-    await persistUser(userCredential.user);
-    await updateAuthState(true);
+    // Check if your device supports Google Play
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    // Get the users ID token
+    await GoogleSignin.signIn();
+    const tokens = await GoogleSignin.getTokens();
+    
+    // Create a Google credential with the token
+    const googleCredential = auth.GoogleAuthProvider.credential(tokens.idToken);
+
+    // Sign-in the user with the credential
+    const userCredential = await auth().signInWithCredential(googleCredential);
     return { user: userCredential.user, error: null };
-  } catch (error) {
-    const firebaseError = error as FirebaseError;
+  } catch (error: any) {
+    console.error('Google sign in error:', error);
     return {
       user: null,
       error: {
-        code: firebaseError.code || 'auth/unknown',
-        message: firebaseError.message || 'An unexpected error occurred',
+        code: error.code || 'unknown',
+        message: error.message || 'An unknown error occurred',
       },
     };
   }
 };
 
 export const signOut = async (): Promise<{ error: AuthError | null }> => {
+  console.log('Starting sign out process...');
   try {
-    await firebaseSignOut(auth);
-    await clearAuthData();
-    await updateAuthState(false);
+    await auth().signOut();
+    await GoogleSignin.signOut(); // Also sign out from Google
+    console.log('Sign out successful');
     return { error: null };
-  } catch (error) {
-    const firebaseError = error as FirebaseError;
+  } catch (error: any) {
+    console.error('Sign out error:', error);
     return {
       error: {
-        code: firebaseError.code,
-        message: firebaseError.message,
+        code: error.code || 'unknown',
+        message: error.message || 'An unknown error occurred',
       },
     };
   }
 };
 
-export const subscribeToAuthChanges = (callback: (user: User | null) => void) => {
-  return onAuthStateChanged(auth, async (user) => {
-    await persistUser(user);
-    await updateAuthState(!!user);
+export const subscribeToAuthChanges = (callback: (user: FirebaseAuthTypes.User | null) => void) => {
+  console.log('Setting up auth state listener...');
+  return auth().onAuthStateChanged((user) => {
+    console.log('Auth state changed:', user ? `User: ${user.uid}` : 'No user');
     callback(user);
   });
 }; 
