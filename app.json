@@ -13,8 +13,7 @@
       "backgroundColor": "#ffffff"
     },
     "updates": {
-      "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/your-project-id"
+      "fallbackToCacheTimeout": 0
     },
     "assetBundlePatterns": [
       "**/*"
@@ -38,14 +37,18 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "extra": {
-      "eas": {
-        "projectId": "your-project-id"
-      }
-    },
     "plugins": [
       "expo-router"
     ],
-    "scheme": "tokzic"
+    "scheme": "tokzic",
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "c13f6552-529f-45d4-99aa-9888c57550dd"
+      }
+    },
+    "owner": "cale.mcnulty"
   }
 }

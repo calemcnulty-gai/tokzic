@@ -22,15 +22,19 @@ service cloud.firestore {
         // Allow any authenticated user to update stats
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats']) &&
         // Ensure only allowed stats are being updated
-        request.resource.data.stats.diff(resource.data.stats).affectedKeys().hasAny(['views', 'likes', 'superLikes', 'tips', 'comments']) &&
-        // Ensure the increment is by 1 or -1 for likes/views/comments, but allow any amount for tips
+        request.resource.data.stats.diff(resource.data.stats).affectedKeys().hasAny(['views', 'likes', 'superLikes', 'dislikes', 'superDislikes', 'tips', 'comments']) &&
+        // Ensure the increment is by 1 or -1 for likes/views/comments/dislikes, but allow any amount for tips
         (
           (request.resource.data.stats.views == resource.data.stats.views + 1) ||
           (request.resource.data.stats.likes == resource.data.stats.likes + 1) ||
           (request.resource.data.stats.likes == resource.data.stats.likes - 1) ||
           (request.resource.data.stats.superLikes == resource.data.stats.superLikes + 1) ||
           (request.resource.data.stats.superLikes == resource.data.stats.superLikes - 1) ||
-          (request.resource.data.stats.tips >= resource.data.stats.tips) || // Allow any positive tip amount
+          (('dislikes' in resource.data.stats ? resource.data.stats.dislikes : 0) + 1 == request.resource.data.stats.dislikes) ||
+          (('dislikes' in resource.data.stats ? resource.data.stats.dislikes : 0) - 1 == request.resource.data.stats.dislikes) ||
+          (('superDislikes' in resource.data.stats ? resource.data.stats.superDislikes : 0) + 1 == request.resource.data.stats.superDislikes) ||
+          (('superDislikes' in resource.data.stats ? resource.data.stats.superDislikes : 0) - 1 == request.resource.data.stats.superDislikes) ||
+          (request.resource.data.stats.tips != resource.data.stats.tips) || // Allow any tip amount change (positive or negative)
           (request.resource.data.stats.comments == resource.data.stats.comments + 1)
         ))
       );
@@ -40,8 +44,8 @@ service cloud.firestore {
     // Comments collection
     match /comments/{commentId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
 
     // Likes collection
@@ -51,10 +55,23 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && likeId == resource.data.videoId + '_' + request.auth.uid;
     }
 
+    // Dislikes collection
+    match /dislikes/{dislikeId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && dislikeId == request.resource.data.videoId + '_' + request.auth.uid;
+      allow delete: if isAuthenticated() && dislikeId == resource.data.videoId + '_' + request.auth.uid;
+    }
+
     // Tips collection
     match /tips/{tipId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isOwner(request.resource.data.fromUserId);
+    }
+
+    // Swipes collection
+    match /swipes/{swipeId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
     }
 
     // Users collection

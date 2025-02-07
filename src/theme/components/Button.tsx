@@ -12,18 +12,19 @@ import theme from '../theme';
 const StyledTouchableOpacity = styled(TouchableOpacity);
 
 interface ButtonProps extends TouchableOpacityProps {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'neon';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'neon' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   className?: string;
   textClassName?: string;
 }
 
-const variantClasses = {
-  primary: 'bg-background-glass border border-neon-green/30',
-  secondary: 'bg-background-glass/50 border border-white/10',
+const variants = {
+  primary: 'bg-background-glass border border-neon-pink/30',
+  secondary: 'bg-background-glass border border-white/10',
   ghost: 'border border-white/5',
-  neon: 'bg-neon-green/10 border border-neon-green',
+  neon: 'bg-neon-pink/10 border border-neon-pink',
+  danger: 'bg-status-error/10 border border-status-error',
 };
 
 const sizeClasses = {
@@ -32,29 +33,30 @@ const sizeClasses = {
   lg: 'px-6 py-4',
 };
 
-const textVariantClasses = {
-  primary: 'text-neon-green',
+const textVariants = {
+  primary: 'text-neon-pink',
   secondary: 'text-white',
   ghost: 'text-white/80',
-  neon: 'text-neon-green font-bold',
+  neon: 'text-neon-pink font-bold',
+  danger: 'text-status-error font-bold',
 };
 
-const styles = StyleSheet.create({
-  glass: {
-    shadowColor: theme.colors.neon.green,
+const shadows = {
+  sm: {
+    shadowColor: theme.colors.neon.pink,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
   },
-  neonGlow: {
-    shadowColor: theme.colors.neon.green,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 8,
+  md: {
+    shadowColor: theme.colors.neon.pink,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
-});
+};
 
 export const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
@@ -68,13 +70,13 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseClasses = 'flex-row items-center justify-center rounded-lg backdrop-blur-md';
-  const variantClass = variantClasses[variant];
+  const variantClass = variants[variant];
   const sizeClass = sizeClasses[size];
-  const textVariantClass = textVariantClasses[variant];
+  const textVariantClass = textVariants[variant];
   const disabledClass = disabled || loading ? 'opacity-50' : '';
 
   const buttonStyle = [
-    variant === 'neon' ? styles.neonGlow : styles.glass,
+    variant === 'neon' ? shadows.md : shadows.sm,
     style,
   ];
 
@@ -86,7 +88,7 @@ export const Button: React.FC<ButtonProps> = ({
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color={theme.colors.neon.green} />
+        <ActivityIndicator color={theme.colors.neon.pink} />
       ) : (
         <Text
           className={`font-medium ${textVariantClass} ${textClassName}`}

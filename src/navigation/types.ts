@@ -15,8 +15,6 @@ export type MainStackParamList = {
 
 export type TabParamList = {
   Feed: undefined;
-  Discover: undefined;
-  Create: undefined;
   Notifications: undefined;
   Profile: undefined;
 }; 

@@ -29,7 +29,11 @@
       "autoIncrement": true,
       "env": {
         "APP_ENV": "production"
-      }
+      },
+      "distribution": "store"
+    },
+    "preview": {
+      "distribution": "internal"
     }
   },
   "submit": {
@@ -40,7 +44,6 @@
         "appleTeamId": "your-team-id"
       },
       "android": {
-        "serviceAccountKeyPath": "./path-to-your-service-account.json",
         "track": "internal"
       }
     }

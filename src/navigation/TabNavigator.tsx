@@ -4,7 +4,6 @@ import { styled } from 'nativewind';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { TabParamList } from './types';
 import { FeedScreen } from '../screens/feed/FeedScreen';
-import { DiscoverScreen } from '../screens/discover/DiscoverScreen';
 import { useTheme } from '../theme/ThemeProvider';
 import Icon from 'react-native-vector-icons/Ionicons';
 
@@ -13,12 +12,6 @@ const StyledView = styled(View);
 const StyledText = styled(Text);
 
 // Temporary placeholder screens
-const CreateScreen = () => (
-  <StyledView className="flex-1 justify-center items-center bg-background-primary">
-    <StyledText className="text-text-primary">Create</StyledText>
-  </StyledView>
-);
-
 const NotificationsScreen = () => (
   <StyledView className="flex-1 justify-center items-center bg-background-primary">
     <StyledText className="text-text-primary">Notifications</StyledText>
@@ -49,7 +42,7 @@ export const TabNavigator = () => {
           left: 0,
           right: 0,
         },
-        tabBarActiveTintColor: theme.colors.neon.green,
+        tabBarActiveTintColor: theme.colors.neon.pink,
         tabBarInactiveTintColor: theme.colors.text.muted,
         tabBarShowLabel: true,
         tabBarLabelStyle: {
@@ -65,26 +58,6 @@ export const TabNavigator = () => {
           tabBarLabel: 'Home',
           tabBarIcon: ({ color, size }) => (
             <Icon name="home" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen 
-        name="Discover" 
-        component={DiscoverScreen}
-        options={{
-          tabBarLabel: 'Discover',
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="compass" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen 
-        name="Create" 
-        component={CreateScreen}
-        options={{
-          tabBarLabel: 'Create',
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="add-circle" size={32} color={theme.colors.neon.green} />
           ),
         }}
       />

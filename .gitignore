@@ -35,6 +35,8 @@ yarn-error.*
 .env.development
 .env.test
 .env.production
+.env.*.local
+*.env
 
 # typescript
 *.tsbuildinfo
@@ -46,6 +48,10 @@ GoogleService-Info.plist
 firebase-debug.log
 firebase-debug.*.log
 .firebase/
+firebase-admin*.json
+*firebase-adminsdk*.json
+serviceAccount*.json
+*-firebase-adminsdk-*.json
 
 # Android/IntelliJ
 android/app/debug.keystore
@@ -56,6 +62,10 @@ android/local.properties
 android/captures/
 android/*.iml
 android/.idea/
+android/app/release/
+android/keystore.properties
+android/app/*.keystore
+android/app/*.jks
 
 # Xcode
 ios/.xcode.env
@@ -87,6 +97,7 @@ ios/Index/
 *.swp
 *.swo
 *~
+.history/
 
 # Temporary files
 *.log
@@ -94,3 +105,50 @@ ios/Index/
 *.temp
 .DS_Store
 Thumbs.db
+
+# Build and cache
+.cache/
+build/
+dist/
+*.cache
+.eslintcache
+
+# Secrets and keys
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.priv
+*.asc
+id_rsa*
+*.gpg
+*.pgp
+*.secret
+secrets.yaml
+secrets.yml
+secrets.json
+secret.*
+private.*
+*.private
+credentials.*
+*credential*
+*password*
+*api_key*
+*apikey*
+*secret*
+*token*
+
+# Large media files and blobs
+*.mp4
+*.mov
+*.avi
+*.wmv
+*.flv
+*.mkv
+*.webm
+*.blob
+*.bin
+*.dat

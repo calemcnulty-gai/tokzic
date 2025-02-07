@@ -1,59 +1,120 @@
 # Data Management
 
 ## Overview
-Implementation of data services and Firestore integration for managing video feed data, including caching, pagination, and real-time updates.
+Implementation of data services and Firestore integration for managing video feed data, including user interactions, engagement tracking, and real-time updates.
+
+## Implemented Features
+✅ Firestore Collections
+- Videos collection with metadata
+- Comments with real-time updates
+- Likes/Super Likes tracking
+- Tips (regular and toxic)
+- Swipes for feed personalization
+
+✅ Security Rules
+- Proper authentication checks
+- User-specific permissions
+- Engagement tracking rules
+- Rate limiting for tips
 
 ## Data Models
 
-### 1. Video Data
+### Video Metadata
 ```typescript
-// types/video.ts
-interface VideoData {
+interface VideoMetadata {
   id: string;
-  url: string;
-  thumbnailUrl: string;
+  title: string;
+  description: string;
+  createdAt: number;
+  creatorId: string;
   creator: {
-    id: string;
     username: string;
-    avatarUrl: string;
+    avatarUrl?: string;
   };
-  metadata: {
-    description: string;
+  stats: {
     views: number;
     likes: number;
-    createdAt: Date;
-    duration: number;
-    tags: string[];
-    music?: {
-      title: string;
-      artist: string;
-      url: string;
-    };
-  };
-  engagement: {
-    likeCount: number;
-    commentCount: number;
-    shareCount: number;
-    viewCount: number;
+    superLikes: number;
+    comments: number;
+    tips: number;
   };
 }
 ```
 
-### 2. Feed Service
+### User Interactions
 ```typescript
-// services/feed.ts
-interface FeedService {
-  // Core feed operations
-  getFeedVideos: (limit: number, startAfter?: string) => Promise<VideoData[]>;
-  getVideoById: (id: string) => Promise<VideoData>;
-  
-  // Real-time updates
-  subscribeToFeed: (callback: (videos: VideoData[]) => void) => () => void;
-  subscribeToVideo: (id: string, callback: (video: VideoData) => void) => () => void;
-  
-  // Engagement tracking
-  incrementViews: (videoId: string) => Promise<void>;
-  updateEngagement: (videoId: string, type: 'like' | 'share' | 'comment') => Promise<void>;
+interface Like {
+  id: string;
+  videoId: string;
+  userId: string;
+  type: 'like' | 'superLike';
+  createdAt: number;
+}
+
+interface Comment {
+  id: string;
+  videoId: string;
+  userId: string;
+  text: string;
+  createdAt: number;
+  user: {
+    username: string;
+    avatarUrl?: string;
+  };
+  likes: number;
+}
+
+interface Tip {
+  id: string;
+  videoId: string;
+  fromUserId: string;
+  toUserId: string;
+  amount: number;
+  message?: string;
+  createdAt: number;
+  type: 'regular' | 'toxic';
+}
+
+interface Swipe {
+  id: string;
+  videoId: string;
+  userId: string;
+  direction: 'left' | 'right';
+  createdAt: number;
+}
+```
+
+## Firestore Security Rules
+```typescript
+// Key security rules implemented:
+match /videos/{videoId} {
+  allow read: if isAuthenticated();
+  allow update: if isAuthenticated() && (
+    isOwner(resource.data.creatorId) ||
+    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats'])
+  );
+}
+
+match /comments/{commentId} {
+  allow read: if isAuthenticated();
+  allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+  allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+}
+
+match /likes/{likeId} {
+  allow read: if isAuthenticated();
+  allow create: if isAuthenticated() && likeId == request.resource.data.videoId + '_' + request.auth.uid;
+  allow delete: if isAuthenticated() && likeId == resource.data.videoId + '_' + request.auth.uid;
+}
+
+match /tips/{tipId} {
+  allow read: if isAuthenticated();
+  allow create: if isAuthenticated() && isOwner(request.resource.data.fromUserId);
+}
+
+match /swipes/{swipeId} {
+  allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+  allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
 }
 ```
 
