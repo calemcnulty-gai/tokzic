@@ -12,10 +12,55 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    // Videos collection
+    match /videos/{videoId} {
+      allow read: if isAuthenticated();  // Allow any authenticated user to read
+      allow create: if isAuthenticated() && isOwner(request.resource.data.creatorId);
+      allow update: if isAuthenticated() && (
+        // Allow owner to update everything
+        isOwner(resource.data.creatorId) ||
+        // Allow any authenticated user to update stats
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats']) &&
+        // Ensure only allowed stats are being updated
+        request.resource.data.stats.diff(resource.data.stats).affectedKeys().hasAny(['views', 'likes', 'superLikes', 'tips', 'comments']) &&
+        // Ensure the increment is by 1 or -1
+        (
+          (request.resource.data.stats.views == resource.data.stats.views + 1) ||
+          (request.resource.data.stats.likes == resource.data.stats.likes + 1) ||
+          (request.resource.data.stats.likes == resource.data.stats.likes - 1) ||
+          (request.resource.data.stats.superLikes == resource.data.stats.superLikes + 1) ||
+          (request.resource.data.stats.superLikes == resource.data.stats.superLikes - 1) ||
+          (request.resource.data.stats.tips == resource.data.stats.tips + 1) ||
+          (request.resource.data.stats.comments == resource.data.stats.comments + 1)
+        ))
+      );
+      allow delete: if isAuthenticated() && isOwner(resource.data.creatorId);
+    }
+
+    // Comments collection
+    match /comments/{commentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+
+    // Likes collection
+    match /likes/{likeId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && likeId == request.resource.data.videoId + '_' + request.auth.uid;
+      allow delete: if isAuthenticated() && likeId == resource.data.videoId + '_' + request.auth.uid;
+    }
+
+    // Tips collection
+    match /tips/{tipId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(request.resource.data.fromUserId);
+    }
+
     // Users collection
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isOwner(userId);
+      allow write: if isAuthenticated() && isOwner(userId);
       
       // User's private data subcollection
       match /private/{document=**} {

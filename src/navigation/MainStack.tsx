@@ -12,14 +12,14 @@ const StyledText = styled(Text);
 
 // Temporary placeholder screens
 const VideoDetailScreen = () => (
-  <StyledView class="flex-1 justify-center items-center bg-background-primary">
-    <StyledText class="text-text-primary">Video Detail</StyledText>
+  <StyledView className="flex-1 justify-center items-center bg-background-primary">
+    <StyledText className="text-text-primary">Video Detail</StyledText>
   </StyledView>
 );
 
 const SettingsScreen = () => (
-  <StyledView class="flex-1 justify-center items-center bg-background-primary">
-    <StyledText class="text-text-primary">Settings</StyledText>
+  <StyledView className="flex-1 justify-center items-center bg-background-primary">
+    <StyledText className="text-text-primary">Settings</StyledText>
   </StyledView>
 );
 

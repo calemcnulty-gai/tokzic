@@ -43,9 +43,54 @@ yarn-error.*
 google-services.json
 GoogleService-Info.plist
 **/GoogleService-Info.plist
+firebase-debug.log
+firebase-debug.*.log
+.firebase/
 
 # Android/IntelliJ
 android/app/debug.keystore
+android/.gradle
+android/app/build
+android/build
+android/local.properties
+android/captures/
+android/*.iml
+android/.idea/
 
 # Xcode
 ios/.xcode.env
+ios/Pods/
+ios/build/
+ios/DerivedData/
+ios/*.pbxuser
+ios/!default.pbxuser
+ios/*.mode1v3
+ios/!default.mode1v3
+ios/*.mode2v3
+ios/!default.mode2v3
+ios/*.perspectivev3
+ios/!default.perspectivev3
+ios/xcuserdata
+ios/*.xccheckout
+ios/*.moved-aside
+ios/*.xcuserstate
+ios/*.xcscmblueprint
+ios/*.hmap
+ios/*.ipa
+ios/*.dSYM.zip
+ios/*.dSYM
+ios/Index/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.log
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db

@@ -9,8 +9,7 @@ Implementation of the core navigation structure using React Navigation, includin
 // App navigation structure
 RootNavigator
 ├── AuthStack (if not authenticated)
-│   ├── Login
-│   └── Register
+│   └── Auth (combined login/register)
 └── MainStack (if authenticated)
     ├── TabNavigator
     │   ├── Feed (main video feed)
@@ -51,8 +50,7 @@ export type RootStackParamList = {
 };
 
 export type AuthStackParamList = {
-  Login: undefined;
-  Register: undefined;
+  Auth: undefined;
 };
 
 export type MainStackParamList = {
@@ -98,11 +96,11 @@ const navigationSlice = createSlice({
 Create placeholder screens for all routes with basic styling and TypeScript support:
 
 ```typescript
-// screens/auth/Login.tsx
-export const Login = () => {
+// screens/auth/AuthScreen.tsx
+export const AuthScreen = () => {
   return (
     <View style={styles.container}>
-      <Text>Login Screen</Text>
+      <Text>Authentication Screen</Text>
     </View>
   );
 };

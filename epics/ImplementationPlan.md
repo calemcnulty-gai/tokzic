@@ -144,8 +144,15 @@ This document outlines the epics and tasks needed to deliver the Tokzic app. Eac
   - Write unit tests for individual components.
   - Conduct integration and end-to-end testing across key workflows.
 - **Performance Optimization:**
-  - Optimize video load times, swipe responsiveness, and Firebase queries.
-  - Monitor and refine AI processing efficiency.
+  - Video Feed Performance:
+    - Optimize video load times and preloading strategies
+    - Implement efficient video caching mechanisms
+    - Fine-tune feed scrolling and video playback performance
+    - Optimize memory usage during feed navigation
+  - General Performance:
+    - Optimize Firebase queries and data fetching
+    - Monitor and refine AI processing efficiency
+    - Implement performance monitoring and analytics
 - **Deployment:**
   - Prepare Expo release builds for iOS and Android.
   - Set up monitoring and logging for the live environment.
