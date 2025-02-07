@@ -1,7 +1,7 @@
 // Learn more https://docs.expo.dev/guides/customizing-metro
-const { getDefaultConfig } = require('expo/metro-config');
+const { getDefaultConfig } = require('@react-native/metro-config');
 
-/** @type {import('expo/metro-config').MetroConfig} */
+/** @type {import('@react-native/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname, {
   // Enable CSS support
   isCSSEnabled: true,
@@ -16,11 +16,7 @@ config.transformer = {
 
 config.resolver = {
   ...config.resolver,
-  assetExts: [
-    ...config.resolver.assetExts.filter(ext => ext !== 'svg'),
-    'db',
-    'sqlite',
-  ],
+  assetExts: [...config.resolver.assetExts.filter((ext) => ext !== 'svg'), 'db', 'sqlite'],
   sourceExts: [...config.resolver.sourceExts, 'svg'],
 };
 

@@ -1,44 +1,63 @@
 import React, { useState } from 'react';
 import {
   View,
-  TouchableOpacity,
   Text,
-  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
-import { signInWithGoogle } from '../services/auth';
-import Icon from 'react-native-vector-icons/FontAwesome';
-import * as WebBrowser from 'expo-web-browser';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { styled } from 'nativewind';
+import { useTheme } from '../theme/ThemeProvider';
+import { signIn, signUp, signInWithGoogle } from '../services/auth';
 
-WebBrowser.maybeCompleteAuthSession();
-
-GoogleSignin.configure({
-  androidClientId: '198315157775-uq158lfqv2a6nbfcs7u0loijvsmbokmv.apps.googleusercontent.com',
-});
+const StyledView = styled(View);
+const StyledText = styled(Text);
+const StyledTextInput = styled(TextInput);
+const StyledTouchableOpacity = styled(TouchableOpacity);
+const StyledKeyboardAvoidingView = styled(KeyboardAvoidingView);
+const StyledScrollView = styled(ScrollView);
 
 export const AuthScreen: React.FC = () => {
+  const theme = useTheme();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+
+  const handleAuth = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = isSignUp
+        ? await signUp(email, password)
+        : await signIn(email, password);
+
+      if (response.error) {
+        Alert.alert('Error', response.error.message);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      console.log('Starting Google Sign In...');
-      await GoogleSignin.hasPlayServices();
-      const userInfo = await GoogleSignin.signIn();
-      console.log('Sign In Result:', userInfo);
-      
-      if (userInfo) {
-        const { user, error } = await signInWithGoogle(userInfo.idToken);
-        if (error) {
-          console.error('Sign In Error:', error);
-          Alert.alert('Error', error.message);
-        } else {
-          console.log('Signed in successfully with Google:', user?.uid);
-        }
+      const response = await signInWithGoogle();
+      if (response.error) {
+        Alert.alert('Error', response.error.message);
       }
     } catch (error) {
-      console.error('Unexpected Error:', error);
       Alert.alert('Error', 'An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -46,54 +65,78 @@ export const AuthScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.googleButton}
-        onPress={handleGoogleSignIn}
-        disabled={isLoading}
+    <StyledKeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      class="flex-1 bg-background-primary"
+    >
+      <StyledScrollView
+        class="flex-1"
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
       >
-        <Icon 
-          name="google" 
-          size={20} 
-          color="#4285F4"
-          style={styles.googleIcon} 
-        />
-        <Text style={styles.googleButtonText}>
-          {isLoading ? 'Loading...' : 'Sign in with Google'}
-        </Text>
-      </TouchableOpacity>
-    </View>
+        <StyledView class="flex-1 justify-center p-5">
+          <StyledText class="text-3xl font-bold mb-8 text-center text-text-primary">
+            {isSignUp ? 'Create Account' : 'Welcome Back'}
+          </StyledText>
+          
+          <StyledTextInput
+            class="bg-background-secondary text-text-primary p-4 rounded-lg mb-4"
+            placeholder="Email"
+            placeholderTextColor={theme.colors.text.muted}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            editable={!isLoading}
+          />
+          
+          <StyledTextInput
+            class="bg-background-secondary text-text-primary p-4 rounded-lg mb-6"
+            placeholder="Password"
+            placeholderTextColor={theme.colors.text.muted}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            editable={!isLoading}
+          />
+
+          <StyledTouchableOpacity
+            class="bg-neon-green p-4 rounded-lg mb-4 items-center"
+            onPress={handleAuth}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color={theme.colors.background.primary} />
+            ) : (
+              <StyledText class="text-background-primary font-semibold text-lg">
+                {isSignUp ? 'Sign Up' : 'Sign In'}
+              </StyledText>
+            )}
+          </StyledTouchableOpacity>
+
+          <StyledTouchableOpacity
+            class="bg-background-secondary border border-border-default p-4 rounded-lg mb-4 items-center"
+            onPress={handleGoogleSignIn}
+            disabled={isLoading}
+          >
+            <StyledText class="text-text-primary font-semibold text-lg">
+              Continue with Google
+            </StyledText>
+          </StyledTouchableOpacity>
+
+          <StyledTouchableOpacity
+            onPress={() => setIsSignUp(!isSignUp)}
+            disabled={isLoading}
+            class="p-3"
+          >
+            <StyledText class="text-neon-green text-center text-sm">
+              {isSignUp
+                ? 'Already have an account? Sign In'
+                : "Don't have an account? Sign Up"}
+            </StyledText>
+          </StyledTouchableOpacity>
+        </StyledView>
+      </StyledScrollView>
+    </StyledKeyboardAvoidingView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  googleButton: {
-    height: 48,
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: '#dadce0',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-  },
-  googleIcon: {
-    marginRight: 12,
-  },
-  googleButtonText: {
-    color: '#3c4043',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-}); 

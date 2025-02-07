@@ -11,14 +11,14 @@
 ## Firebase SDK Integration
 - [ ] Install Firebase dependencies:
   ```bash
-  npx expo install firebase
+  yarn add @react-native-firebase/app @react-native-firebase/auth @react-native-firebase/firestore @react-native-firebase/storage
   ```
 - [ ] Create firebase config file (src/services/firebase.ts):
   ```typescript
-  import { initializeApp } from 'firebase/app';
-  import { getAuth } from 'firebase/auth';
-  import { getFirestore } from 'firebase/firestore';
-  import { getStorage } from 'firebase/storage';
+  import auth from '@react-native-firebase/auth';
+  import firestore from '@react-native-firebase/firestore';
+  import storage from '@react-native-firebase/storage';
+  import firebase from '@react-native-firebase/app';
   ```
 - [ ] Set up environment variables for Firebase config
 - [ ] Initialize Firebase services:

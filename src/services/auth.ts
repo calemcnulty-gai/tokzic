@@ -1,5 +1,6 @@
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { GoogleSignin, statusCodes, User } from '@react-native-google-signin/google-signin';
+import { auth, firebase } from './firebase';
+import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { Platform } from 'react-native';
 import { ANDROID_CLIENT_ID } from '@env';
 
@@ -30,7 +31,7 @@ export const signUp = async (email: string, password: string): Promise<AuthRespo
       user: null,
       error: {
         code: error.code || 'unknown',
-        message: error.message || 'An unknown error occurred',
+        message: error.message || 'An unexpected error occurred',
       },
     };
   }
@@ -48,7 +49,7 @@ export const signIn = async (email: string, password: string): Promise<AuthRespo
       user: null,
       error: {
         code: error.code || 'unknown',
-        message: error.message || 'An unknown error occurred',
+        message: error.message || 'An unexpected error occurred',
       },
     };
   }
@@ -59,11 +60,10 @@ export const signInWithGoogle = async (): Promise<AuthResponse> => {
     // Check if your device supports Google Play
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
     // Get the users ID token
-    await GoogleSignin.signIn();
-    const tokens = await GoogleSignin.getTokens();
+    const { idToken } = await GoogleSignin.signIn();
     
     // Create a Google credential with the token
-    const googleCredential = auth.GoogleAuthProvider.credential(tokens.idToken);
+    const googleCredential = auth.GoogleAuthProvider.credential(idToken);
 
     // Sign-in the user with the credential
     const userCredential = await auth().signInWithCredential(googleCredential);
@@ -74,7 +74,7 @@ export const signInWithGoogle = async (): Promise<AuthResponse> => {
       user: null,
       error: {
         code: error.code || 'unknown',
-        message: error.message || 'An unknown error occurred',
+        message: error.message || 'An unexpected error occurred',
       },
     };
   }
@@ -92,7 +92,7 @@ export const signOut = async (): Promise<{ error: AuthError | null }> => {
     return {
       error: {
         code: error.code || 'unknown',
-        message: error.message || 'An unknown error occurred',
+        message: error.message || 'An unexpected error occurred',
       },
     };
   }
