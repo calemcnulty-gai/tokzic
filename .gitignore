@@ -38,3 +38,14 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# Firebase
+google-services.json
+GoogleService-Info.plist
+**/GoogleService-Info.plist
+
+# Android/IntelliJ
+android/app/debug.keystore
+
+# Xcode
+ios/.xcode.env
