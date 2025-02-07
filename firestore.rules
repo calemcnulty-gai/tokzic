@@ -23,14 +23,14 @@ service cloud.firestore {
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats']) &&
         // Ensure only allowed stats are being updated
         request.resource.data.stats.diff(resource.data.stats).affectedKeys().hasAny(['views', 'likes', 'superLikes', 'tips', 'comments']) &&
-        // Ensure the increment is by 1 or -1
+        // Ensure the increment is by 1 or -1 for likes/views/comments, but allow any amount for tips
         (
           (request.resource.data.stats.views == resource.data.stats.views + 1) ||
           (request.resource.data.stats.likes == resource.data.stats.likes + 1) ||
           (request.resource.data.stats.likes == resource.data.stats.likes - 1) ||
           (request.resource.data.stats.superLikes == resource.data.stats.superLikes + 1) ||
           (request.resource.data.stats.superLikes == resource.data.stats.superLikes - 1) ||
-          (request.resource.data.stats.tips == resource.data.stats.tips + 1) ||
+          (request.resource.data.stats.tips >= resource.data.stats.tips) || // Allow any positive tip amount
           (request.resource.data.stats.comments == resource.data.stats.comments + 1)
         ))
       );
