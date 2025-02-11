@@ -5,6 +5,8 @@ import { VideoData } from '../services/video';
 import { VideoMetadata } from '../types/firestore';
 import { createLogger } from '../utils/logger';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { AnyAction, ThunkDispatch } from '@reduxjs/toolkit';
+import { RootState } from '../store';
 import {
   handlePlaybackStatusUpdate,
   togglePlayback,
@@ -25,7 +27,7 @@ const updatePlaybackStatus = createAction<AVPlaybackStatus>('video/updatePlaybac
 
 export const VideoPlayer = memo(function VideoPlayer({ video, metadata, shouldPlay }: VideoPlayerProps) {
   const videoRef = useRef<Video | null>(null);
-  const dispatch = useAppDispatch();
+  const dispatch = useAppDispatch() as ThunkDispatch<RootState, unknown, AnyAction>;
 
   // Get playback state from Redux
   const { isPlaying, isBuffering } = useAppSelector(selectPlaybackState);
@@ -59,12 +61,22 @@ export const VideoPlayer = memo(function VideoPlayer({ video, metadata, shouldPl
   React.useEffect(() => {
     if (videoRef.current) {
       if (shouldPlay && !isPlaying) {
+        logger.debug('Auto-playing video on mount/update', { videoId: video.id });
         videoRef.current.playAsync();
       } else if (!shouldPlay && isPlaying) {
+        logger.debug('Pausing video on update', { videoId: video.id });
         videoRef.current.pauseAsync();
       }
     }
-  }, [shouldPlay, isPlaying]);
+  }, [shouldPlay, isPlaying, video.id]);
+
+  // Add initial play effect
+  React.useEffect(() => {
+    if (videoRef.current && shouldPlay) {
+      logger.debug('Initial video autoplay', { videoId: video.id });
+      videoRef.current.playAsync();
+    }
+  }, [video.id]); // Only run when video changes
 
   return (
     <TouchableWithoutFeedback onPress={handleVideoPress}>
@@ -74,7 +86,7 @@ export const VideoPlayer = memo(function VideoPlayer({ video, metadata, shouldPl
           source={{ uri: video.url }}
           style={styles.video}
           resizeMode={ResizeMode.COVER}
-          shouldPlay={isPlaying && shouldPlay}
+          shouldPlay={shouldPlay}
           isLooping
           onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
           onLoad={(status) => {
@@ -84,6 +96,10 @@ export const VideoPlayer = memo(function VideoPlayer({ video, metadata, shouldPl
               status
             });
             handlePlaybackStatusUpdate(status);
+            // Auto-play on load if shouldPlay is true
+            if (shouldPlay && videoRef.current) {
+              videoRef.current.playAsync();
+            }
           }}
           onError={(error) => {
             logger.error('Video loading error', { 

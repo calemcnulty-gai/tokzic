@@ -1,6 +1,6 @@
 export type RootStackParamList = {
-  Auth: undefined;
-  Main: undefined;
+  MainStack: undefined;
+  AuthStack: undefined;
 };
 
 export type AuthStackParamList = {
@@ -8,13 +8,7 @@ export type AuthStackParamList = {
 };
 
 export type MainStackParamList = {
-  Tabs: undefined;
+  Feed: undefined;
   VideoDetail: { videoId: string };
   Settings: undefined;
-};
-
-export type TabParamList = {
-  Feed: undefined;
-  Notifications: undefined;
-  Profile: undefined;
 }; 

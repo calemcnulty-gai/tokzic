@@ -1,5 +1,6 @@
 import { initializeAuthListener } from './auth-listener';
 import { createLogger } from '../utils/logger';
+import { app } from '../config/firebase';
 
 const logger = createLogger('Initialize');
 

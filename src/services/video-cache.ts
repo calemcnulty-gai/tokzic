@@ -1,6 +1,5 @@
-import { Video } from './video';
+import type { VideoData } from './video';
 import * as FileSystem from 'expo-file-system';
-import { Platform } from 'react-native';
 import { operationQueue } from './operation-queue';
 import { createLogger } from '../utils/logger';
 
@@ -21,6 +20,15 @@ interface CacheEntry {
   lastAccessed: number;
   isPreloading: boolean;
 }
+
+type FileInfo = {
+  exists: boolean;
+  uri: string;
+  size?: number;
+  isDirectory?: boolean;
+  modificationTime?: number;
+  md5?: string;
+};
 
 class VideoCacheManager {
   private cache: Map<string, CacheEntry> = new Map();
@@ -160,7 +168,7 @@ class VideoCacheManager {
     );
   }
 
-  async preloadVideo(video: Video): Promise<string> {
+  async preloadVideo(video: VideoData): Promise<string> {
     if (!this.isInitialized) {
       await this.initializeCache();
     }
@@ -181,7 +189,7 @@ class VideoCacheManager {
         try {
           // Check if already cached
           const cacheUri = `${CACHE_DIR}/${video.id}.mp4`;
-          const cacheInfo = await FileSystem.getInfoAsync(cacheUri);
+          const cacheInfo = await FileSystem.getInfoAsync(cacheUri) as FileInfo;
 
           if (cacheInfo.exists) {
             logger.info('Using cached video', {
@@ -215,27 +223,27 @@ class VideoCacheManager {
             }
           );
 
-          const { uri } = await downloadResumable.downloadAsync();
-          if (!uri) {
+          const downloadResult = await downloadResumable.downloadAsync();
+          if (!downloadResult?.uri) {
             throw new Error('Download failed - no URI returned');
           }
 
-          const fileInfo = await FileSystem.getInfoAsync(uri);
+          const fileInfo = await FileSystem.getInfoAsync(downloadResult.uri) as FileInfo;
           logger.info('Video download complete', { 
             videoId: video.id,
-            uri,
+            uri: downloadResult.uri,
             size: fileInfo.size 
           });
 
           // Update cache entry
           this.cache.set(video.id, {
-            uri,
+            uri: downloadResult.uri,
             size: fileInfo.size || 0,
             lastAccessed: Date.now(),
             isPreloading: false
           });
 
-          return uri;
+          return downloadResult.uri;
         } catch (error) {
           logger.error('Failed to preload video', {
             videoId: video.id,

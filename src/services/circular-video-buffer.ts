@@ -1,4 +1,5 @@
-import { Video, fetchVideosBefore, fetchVideosAfter } from './video';
+import type { VideoData } from './video';
+import { videoService } from './video';
 import { VideoMetadata } from '../types/firestore';
 import { videoCacheManager } from './video-cache';
 import { operationQueue } from './operation-queue';
@@ -7,7 +8,7 @@ import { createLogger } from '../utils/logger';
 const logger = createLogger('CircularVideoBuffer');
 
 export interface VideoWithMetadata {
-  video: Video;
+  video: VideoData;
   metadata: VideoMetadata;
 }
 
@@ -31,7 +32,7 @@ export class CircularVideoBuffer {
    * @param videos Initial videos to populate the buffer with
    * @param metadata Metadata for the videos
    */
-  constructor(videos: Video[], metadata: VideoMetadata[]) {
+  constructor(videos: VideoData[], metadata: VideoMetadata[]) {
     logger.info('Initializing CircularVideoBuffer', {
       totalVideos: videos.length,
       totalMetadata: metadata.length,
@@ -127,7 +128,7 @@ export class CircularVideoBuffer {
         // If we're at or past the middle, we need to fetch the next video
         if (this.currentIndex >= MIDDLE_INDEX) {
           const lastVideo = this.videos[this.videos.length - 1].video;
-          const nextVideos = await fetchVideosAfter(1, lastVideo.id);
+          const nextVideos = await videoService.fetchVideosAfter(1, lastVideo.id);
           
           if (nextVideos.length === 0) {
             this.isAtEnd = true;
@@ -137,7 +138,7 @@ export class CircularVideoBuffer {
 
           // Remove first video and add new one to end
           this.videos.shift();
-          await this.addVideo(nextVideos[0]);
+          await this.addVideo(nextVideos[0].video);
           this.currentIndex--;
         }
 
@@ -181,7 +182,7 @@ export class CircularVideoBuffer {
         // If we're at or before the middle, we need to fetch the previous video
         if (this.currentIndex <= MIDDLE_INDEX) {
           const firstVideo = this.videos[0].video;
-          const prevVideos = await fetchVideosBefore(1, firstVideo.id);
+          const prevVideos = await videoService.fetchVideosBefore(1, firstVideo.id);
           
           if (prevVideos.length === 0) {
             this.isAtStart = true;
@@ -191,7 +192,7 @@ export class CircularVideoBuffer {
 
           // Remove last video and add new one to start
           this.videos.pop();
-          await this.addVideo(prevVideos[0], true);
+          await this.addVideo(prevVideos[0].video, true);
           this.currentIndex++;
         }
 
@@ -257,7 +258,7 @@ export class CircularVideoBuffer {
         const nextVideo = this.videos[this.currentIndex + 1].video;
         if (nextVideo.url) {
           adjacentVideos.push(nextVideo.id);
-          preloadPromises.push(videoCacheManager.preloadVideo(nextVideo));
+          preloadPromises.push(videoCacheManager.preloadVideo(nextVideo).then(() => {}));
         }
       }
 
@@ -266,7 +267,7 @@ export class CircularVideoBuffer {
         const prevVideo = this.videos[this.currentIndex - 1].video;
         if (prevVideo.url) {
           adjacentVideos.push(prevVideo.id);
-          preloadPromises.push(videoCacheManager.preloadVideo(prevVideo));
+          preloadPromises.push(videoCacheManager.preloadVideo(prevVideo).then(() => {}));
         }
       }
 
@@ -287,7 +288,7 @@ export class CircularVideoBuffer {
   /**
    * Adds a video to the buffer
    */
-  private async addVideo(video: Video, addToStart: boolean = false): Promise<void> {
+  private async addVideo(video: VideoData, addToStart: boolean = false): Promise<void> {
     return operationQueue.enqueue('add-video', async () => {
       logger.info('Adding video to buffer', { 
         videoId: video.id, 

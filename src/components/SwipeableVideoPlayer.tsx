@@ -13,6 +13,7 @@ import { VideoOverlay } from './feed/VideoOverlay';
 import { CommentPanel } from './feed/CommentPanel';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { createLogger } from '../utils/logger';
+import { workletLogger, safeSerializeError } from '../utils/workletLogger';
 import { VideoData } from '../services/video';
 import { VideoMetadata } from '../types/firestore';
 import { 
@@ -80,13 +81,35 @@ export function SwipeableVideoPlayer({ currentVideo, metadata, isLoading }: Swip
 
         if (isVerticalGesture.value === true) {
           translateY.value = event.translationY;
-          opacity.value = withTiming(Math.max(0.5, 1 - Math.abs(event.translationY) / VERTICAL_SWIPE_THRESHOLD * 0.5));
+          try {
+            opacity.value = withTiming(Math.max(0.5, 1 - Math.abs(event.translationY) / VERTICAL_SWIPE_THRESHOLD * 0.5));
+          } catch (error) {
+            const safeErrorMessage = safeSerializeError(error);
+            runOnJS(workletLogger.error)('Error in vertical timing animation', {
+              errorMessage: safeErrorMessage,
+              translationY: event.translationY.toString()
+            });
+          }
         } else if (isVerticalGesture.value === false) {
           translateX.value = event.translationX;
-          opacity.value = withTiming(Math.max(0.5, 1 - Math.abs(event.translationX) / SWIPE_THRESHOLD * 0.5));
+          try {
+            opacity.value = withTiming(Math.max(0.5, 1 - Math.abs(event.translationX) / SWIPE_THRESHOLD * 0.5));
+          } catch (error) {
+            const safeErrorMessage = safeSerializeError(error);
+            runOnJS(workletLogger.error)('Error in horizontal timing animation', {
+              errorMessage: safeErrorMessage,
+              translationX: event.translationX.toString()
+            });
+          }
         }
       } catch (error) {
-        runOnJS(logger.error)('Error in gesture onUpdate', { error });
+        const safeErrorMessage = safeSerializeError(error);
+        runOnJS(workletLogger.error)('Error in gesture onUpdate', {
+          errorMessage: safeErrorMessage,
+          translationX: event.translationX.toString(),
+          translationY: event.translationY.toString(),
+          isVerticalGesture: isVerticalGesture.value?.toString() ?? 'null'
+        });
       }
     })
     .onEnd((event) => {
@@ -95,62 +118,132 @@ export function SwipeableVideoPlayer({ currentVideo, metadata, isLoading }: Swip
         if (isVerticalGesture.value === true) {
           if (Math.abs(translateY.value) > VERTICAL_SWIPE_THRESHOLD) {
             const direction = translateY.value > 0 ? 'down' : 'up';
-            runOnJS(dispatch)(triggerSwipe({ direction }));
+            const dispatchSwipe = () => dispatch(triggerSwipe({ direction }));
+            runOnJS(dispatchSwipe)();
             
-            translateY.value = withSpring(
-              direction === 'down' ? height : -height,
-              {
-                damping: 20,
-                stiffness: 90,
-              }
-            );
-            translateX.value = withSpring(0);
-            opacity.value = withTiming(0, { duration: 200 });
+            try {
+              translateY.value = withSpring(
+                direction === 'down' ? height : -height,
+                {
+                  damping: 20,
+                  stiffness: 90,
+                }
+              );
+              translateX.value = withSpring(0);
+              opacity.value = withTiming(0, { duration: 200 });
+            } catch (error) {
+              const safeErrorMessage = safeSerializeError(error);
+              runOnJS(workletLogger.error)('Error in vertical swipe animation', {
+                errorMessage: safeErrorMessage,
+                direction,
+                translationY: translateY.value.toString()
+              });
+            }
           } else {
-            translateY.value = withSpring(0, {
-              damping: 20,
-              stiffness: 400,
-            });
-            opacity.value = withTiming(1, { duration: 200 });
+            try {
+              translateY.value = withSpring(0, {
+                damping: 20,
+                stiffness: 400,
+              });
+              opacity.value = withTiming(1, { duration: 200 });
+            } catch (error) {
+              const safeErrorMessage = safeSerializeError(error);
+              runOnJS(workletLogger.error)('Error in vertical reset animation', {
+                errorMessage: safeErrorMessage,
+                translationY: translateY.value.toString()
+              });
+            }
           }
         } else if (isVerticalGesture.value === false) {
           if (Math.abs(translateX.value) > SWIPE_THRESHOLD) {
             const direction = translateX.value > 0 ? 'right' : 'left';
-            runOnJS(dispatch)(triggerSwipe({ direction }));
+            const dispatchSwipe = () => dispatch(triggerSwipe({ direction }));
+            runOnJS(dispatchSwipe)();
             
-            translateX.value = withSpring(
-              direction === 'right' ? width : -width,
-              {
-                damping: 20,
-                stiffness: 90,
-              }
-            );
-            translateY.value = withSpring(0);
-            opacity.value = withTiming(0, { duration: 200 });
+            try {
+              translateX.value = withSpring(
+                direction === 'right' ? width : -width,
+                {
+                  damping: 20,
+                  stiffness: 90,
+                }
+              );
+              translateY.value = withSpring(0);
+              opacity.value = withTiming(0, { duration: 200 });
+            } catch (error) {
+              const safeErrorMessage = safeSerializeError(error);
+              runOnJS(workletLogger.error)('Error in horizontal swipe animation', {
+                errorMessage: safeErrorMessage,
+                direction,
+                translationX: translateX.value.toString()
+              });
+            }
           } else {
-            translateX.value = withSpring(0, {
-              damping: 20,
-              stiffness: 400,
-            });
-            opacity.value = withTiming(1, { duration: 200 });
+            try {
+              translateX.value = withSpring(0, {
+                damping: 20,
+                stiffness: 400,
+              });
+              opacity.value = withTiming(1, { duration: 200 });
+            } catch (error) {
+              const safeErrorMessage = safeSerializeError(error);
+              runOnJS(workletLogger.error)('Error in horizontal reset animation', {
+                errorMessage: safeErrorMessage,
+                translationX: translateX.value.toString()
+              });
+            }
           }
         } else {
-          translateX.value = withSpring(0);
-          translateY.value = withSpring(0);
-          opacity.value = withTiming(1);
+          try {
+            translateX.value = withSpring(0);
+            translateY.value = withSpring(0);
+            opacity.value = withTiming(1);
+          } catch (error) {
+            const safeErrorMessage = safeSerializeError(error);
+            runOnJS(workletLogger.error)('Error in neutral reset animation', {
+              errorMessage: safeErrorMessage
+            });
+          }
         }
       } catch (error) {
-        runOnJS(logger.error)('Error in gesture onEnd', { error });
+        const safeErrorMessage = safeSerializeError(error);
+        runOnJS(workletLogger.error)('Error in gesture onEnd', {
+          errorMessage: safeErrorMessage,
+          translationX: event.translationX.toString(),
+          translationY: event.translationY.toString(),
+          isVerticalGesture: isVerticalGesture.value?.toString() ?? 'null'
+        });
       }
     });
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value }
-    ],
-    opacity: opacity.value,
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    try {
+      return {
+        transform: [
+          { translateX: translateX.value },
+          { translateY: translateY.value }
+        ],
+        opacity: opacity.value,
+      };
+    } catch (error) {
+      const safeErrorMessage = safeSerializeError(error);
+      runOnJS(workletLogger.error)('Error in animatedStyle worklet', {
+        errorMessage: safeErrorMessage,
+        translateX: translateX.value?.toString() ?? 'undefined',
+        translateY: translateY.value?.toString() ?? 'undefined',
+        opacity: opacity.value?.toString() ?? 'undefined'
+      });
+      // Return a safe fallback style
+      return {
+        transform: [
+          { translateX: 0 },
+          { translateY: 0 }
+        ],
+        opacity: 1,
+      };
+    }
+  });
 
   if (!feedVideo) {
     logger.debug('No current video available');

@@ -2,9 +2,10 @@ import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { signOut, initializeAuth, cleanupAuth } from '../store/slices/authSlice';
 import type { RootState, AppDispatch } from '../store';
+import { AnyAction, ThunkDispatch } from '@reduxjs/toolkit';
 
 export function useAuth() {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch<ThunkDispatch<RootState, unknown, AnyAction>>();
   const { user, isLoading: loading, error, isInitialized } = useSelector((state: RootState) => state.auth);
 
   // Initialize auth state listener

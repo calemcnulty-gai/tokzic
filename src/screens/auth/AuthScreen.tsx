@@ -1,50 +1,74 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
   Alert,
+  TextInput,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator
 } from 'react-native';
-import { styled } from 'nativewind';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../theme/ThemeProvider';
-import { signIn, signUp, signInWithGoogle } from '../../services/auth';
+import { signInWithEmail, signInWithGoogle, signUpWithEmail } from '../../services/auth';
+import { createLogger } from '../../utils/logger';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../../navigation/types';
 
-const StyledView = styled(View);
-const StyledText = styled(Text);
-const StyledTextInput = styled(TextInput);
-const StyledTouchableOpacity = styled(TouchableOpacity);
-const StyledKeyboardAvoidingView = styled(KeyboardAvoidingView);
-const StyledScrollView = styled(ScrollView);
+const logger = createLogger('AuthScreen');
 
-export const AuthScreen: React.FC = () => {
+type Props = NativeStackScreenProps<AuthStackParamList, 'Auth'>;
+
+export function AuthScreen() {
   const theme = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
 
-  const handleAuth = async () => {
+  const handleEmailAuth = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert('Error', 'Please enter both email and password');
+      return;
+    }
+
+    if (!email.includes('@')) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = isSignUp
-        ? await signUp(email, password)
-        : await signIn(email, password);
-
+      logger.info(`Starting email ${isSignUp ? 'sign up' : 'sign in'}`);
+      const response = isSignUp 
+        ? await signUpWithEmail(email, password)
+        : await signInWithEmail(email, password);
+      
       if (response.error) {
-        Alert.alert('Error', response.error.message);
+        logger.error(`Email ${isSignUp ? 'sign up' : 'sign in'} failed`, { 
+          errorCode: response.error.code,
+          errorMessage: response.error.message
+        });
+        Alert.alert('Authentication Failed', response.error.message);
       }
     } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred');
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      logger.error(`Unexpected error during email ${isSignUp ? 'sign up' : 'sign in'}`, { 
+        error: error instanceof Error ? {
+          message: error.message,
+          name: error.name,
+          stack: error.stack
+        } : error
+      });
+      Alert.alert('Authentication Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -53,90 +77,225 @@ export const AuthScreen: React.FC = () => {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
+      logger.info('Initiating Google sign in');
       const response = await signInWithGoogle();
+      
       if (response.error) {
-        Alert.alert('Error', response.error.message);
+        logger.error('Google sign in failed', { 
+          errorCode: response.error.code,
+          errorMessage: response.error.message
+        });
+        Alert.alert(
+          'Authentication Failed',
+          'Unable to sign in with Google. Please try again.'
+        );
       }
     } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred');
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      logger.error('Unexpected error during Google sign in', { 
+        error: error instanceof Error ? {
+          message: error.message,
+          name: error.name,
+          stack: error.stack
+        } : error
+      });
+      Alert.alert('Authentication Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <StyledKeyboardAvoidingView
+    <KeyboardAvoidingView 
+      style={[styles.container, { backgroundColor: theme.colors.background.primary }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-background-primary"
     >
-      <StyledScrollView
-        className="flex-1"
-        contentContainerStyle={{ flexGrow: 1 }}
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <StyledView className="flex-1 justify-center p-5">
-          <StyledText className="text-3xl font-bold mb-8 text-center text-text-primary">
-            {isSignUp ? 'Create Account' : 'Welcome Back'}
-          </StyledText>
-          
-          <StyledTextInput
-            className="bg-background-secondary text-text-primary p-4 rounded-lg mb-4"
-            placeholder="Email"
-            placeholderTextColor={theme.colors.text.muted}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            editable={!isLoading}
-          />
-          
-          <StyledTextInput
-            className="bg-background-secondary text-text-primary p-4 rounded-lg mb-6"
-            placeholder="Password"
-            placeholderTextColor={theme.colors.text.muted}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            editable={!isLoading}
-          />
+        <View style={styles.content}>
+          <View style={styles.logoContainer}>
+            <Icon 
+              name="logo-electron" 
+              size={64} 
+              color={theme.colors.neon.pink}
+            />
+            <Text style={[styles.title, { color: theme.colors.text.primary }]}>
+              Welcome to Tokzic
+            </Text>
+            <Text style={[styles.subtitle, { color: theme.colors.text.muted }]}>
+              {isSignUp ? 'Create an account' : 'Sign in to continue'}
+            </Text>
+          </View>
 
-          <StyledTouchableOpacity
-            className="bg-neon-green p-4 rounded-lg mb-4 items-center"
-            onPress={handleAuth}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color={theme.colors.background.primary} />
-            ) : (
-              <StyledText className="text-background-primary font-semibold text-lg">
-                {isSignUp ? 'Sign Up' : 'Sign In'}
-              </StyledText>
-            )}
-          </StyledTouchableOpacity>
+          <View style={styles.formContainer}>
+            <TextInput
+              style={[styles.input, { 
+                backgroundColor: theme.colors.background.secondary,
+                color: theme.colors.text.primary,
+                borderColor: theme.colors.border
+              }]}
+              placeholder="Email"
+              placeholderTextColor={theme.colors.text.muted}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              editable={!isLoading}
+            />
 
-          <StyledTouchableOpacity
-            className="bg-background-secondary border border-border-default p-4 rounded-lg mb-4 items-center"
-            onPress={handleGoogleSignIn}
-            disabled={isLoading}
-          >
-            <StyledText className="text-text-primary font-semibold text-lg">
-              Continue with Google
-            </StyledText>
-          </StyledTouchableOpacity>
+            <TextInput
+              style={[styles.input, { 
+                backgroundColor: theme.colors.background.secondary,
+                color: theme.colors.text.primary,
+                borderColor: theme.colors.border
+              }]}
+              placeholder="Password"
+              placeholderTextColor={theme.colors.text.muted}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              editable={!isLoading}
+            />
 
-          <StyledTouchableOpacity
-            onPress={() => setIsSignUp(!isSignUp)}
-            disabled={isLoading}
-            className="p-3"
-          >
-            <StyledText className="text-neon-green text-center text-sm">
-              {isSignUp
-                ? 'Already have an account? Sign In'
-                : "Don't have an account? Sign Up"}
-            </StyledText>
-          </StyledTouchableOpacity>
-        </StyledView>
-      </StyledScrollView>
-    </StyledKeyboardAvoidingView>
+            <TouchableOpacity
+              style={[styles.primaryButton, { 
+                backgroundColor: theme.colors.neon.pink,
+                opacity: isLoading ? 0.7 : 1
+              }]}
+              onPress={handleEmailAuth}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color={theme.colors.text.primary} />
+              ) : (
+                <Text style={[styles.primaryButtonText, { color: theme.colors.text.primary }]}>
+                  {isSignUp ? 'Sign Up' : 'Sign In'}
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setIsSignUp(!isSignUp)}
+              disabled={isLoading}
+            >
+              <Text style={[styles.switchModeText, { color: theme.colors.text.muted }]}>
+                {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.divider}>
+              <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+              <Text style={[styles.dividerText, { color: theme.colors.text.muted }]}>or</Text>
+              <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.googleButton, { 
+                backgroundColor: theme.colors.background.secondary,
+                opacity: isLoading ? 0.7 : 1
+              }]}
+              onPress={handleGoogleSignIn}
+              disabled={isLoading}
+            >
+              <Icon 
+                name="logo-google" 
+                size={24} 
+                color={theme.colors.text.primary}
+              />
+              <Text style={[styles.googleButtonText, { color: theme.colors.text.primary }]}>
+                Continue with Google
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
-};
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    paddingTop: 60,
+    paddingBottom: 40,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  formContainer: {
+    width: '100%',
+    maxWidth: 320,
+    gap: 16,
+  },
+  input: {
+    width: '100%',
+    height: 48,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    borderWidth: 1,
+  },
+  primaryButton: {
+    width: '100%',
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  switchModeText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: 14,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 48,
+    borderRadius: 12,
+    gap: 12,
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});

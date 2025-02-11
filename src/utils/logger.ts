@@ -25,10 +25,21 @@ class Logger {
   private formatMessage(level: LogLevel, message: string, metadata: LogMetadata = {}): string {
     const timestamp = new Date().toISOString();
     const metadataStr = Object.keys(metadata).length > 0 
-      ? ` ${JSON.stringify(metadata)}`
+      ? ` ${Object.entries(metadata)
+          .map(([key, value]) => `${key}=${this.formatValue(value)}`)
+          .join(', ')}`
       : '';
     
     return `${timestamp} [${level.toUpperCase()}] [${this.component}] ${message}${metadataStr}`;
+  }
+
+  private formatValue(value: any): string {
+    if (value === null) return 'null';
+    if (value === undefined) return 'undefined';
+    if (typeof value === 'function') return '[Function]';
+    if (Array.isArray(value)) return `[Array(${value.length})]`;
+    if (typeof value === 'object') return '[Object]';
+    return String(value);
   }
 
   private shouldLog(level: LogLevel): boolean {

@@ -42,7 +42,7 @@ export class OperationQueue {
       // Wait for conflicting operation if it exists
       const existing = this.queue.get(conflictingOp);
       if (existing) {
-        await existing.operation().catch(() => {});
+        return existing.operation() as Promise<T>;
       }
     }
 
@@ -68,8 +68,8 @@ export class OperationQueue {
     }
 
     // Create new operation wrapper with timeout
-    const wrappedOperation = async () => {
-      const timeoutPromise = new Promise((_, reject) => {
+    const wrappedOperation = async (): Promise<T> => {
+      const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {
           reject(new Error(`Operation ${id} timed out after ${OperationQueue.OPERATION_TIMEOUT}ms`));
         }, OperationQueue.OPERATION_TIMEOUT);

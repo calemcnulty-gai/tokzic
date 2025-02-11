@@ -1,5 +1,5 @@
-import { auth, firestore } from './firebase';
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { auth, db } from '../config/firebase';
+import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 export interface UserProfile {
   id: string;
@@ -20,12 +20,12 @@ export const createUserProfile = async (user: FirebaseAuthTypes.User): Promise<v
     updatedAt: Date.now(),
   };
 
-  await firestore().collection('users').doc(user.uid).set(userProfile);
+  await db.collection('users').doc(user.uid).set(userProfile);
 };
 
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
-  const userDoc = await firestore().collection('users').doc(userId).get();
-  return userDoc.exists() ? userDoc.data() as UserProfile : null;
+  const userDoc = await db.collection('users').doc(userId).get();
+  return userDoc.exists ? (userDoc.data() as UserProfile) : null;
 };
 
 export const updateUserProfile = async (
@@ -37,5 +37,5 @@ export const updateUserProfile = async (
     updatedAt: Date.now(),
   };
   
-  await firestore().collection('users').doc(userId).update(updateData);
+  await db.collection('users').doc(userId).update(updateData);
 }; 

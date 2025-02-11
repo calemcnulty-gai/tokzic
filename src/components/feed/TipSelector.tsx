@@ -9,7 +9,9 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../theme/ThemeProvider';
+import { createLogger } from '../../utils/logger';
 
+const logger = createLogger('TipSelector');
 const TIP_AMOUNTS = [1, 2, 5, 10, 20, 50, 100];
 const DEFAULT_TIP = 5;
 
@@ -25,17 +27,37 @@ export function TipSelector({ isVisible, onSendTip, onClose }: TipSelectorProps)
   const [animation] = useState(new Animated.Value(0));
 
   React.useEffect(() => {
-    Animated.spring(animation, {
-      toValue: isVisible ? 1 : 0,
-      useNativeDriver: true,
-      tension: 40,
-      friction: 7,
-    }).start();
-  }, [isVisible]);
+    try {
+      Animated.spring(animation, {
+        toValue: isVisible ? 1 : 0,
+        useNativeDriver: true,
+        tension: 40,
+        friction: 7,
+      }).start((result) => {
+        if (!result.finished) {
+          logger.warn('Animation interrupted', {
+            isVisible
+          });
+        }
+      });
+    } catch (error) {
+      logger.error('Animation error in TipSelector', {
+        isVisible,
+        error
+      });
+    }
+  }, [isVisible, animation]);
 
   const handleSendTip = () => {
-    onSendTip(selectedAmount);
-    onClose();
+    try {
+      onSendTip(selectedAmount);
+      onClose();
+    } catch (error) {
+      logger.error('Error sending tip', {
+        amount: selectedAmount,
+        error
+      });
+    }
   };
 
   return (
@@ -74,7 +96,16 @@ export function TipSelector({ isVisible, onSendTip, onClose }: TipSelectorProps)
                       : theme.colors.background.secondary,
                 },
               ]}
-              onPress={() => setSelectedAmount(amount)}
+              onPress={() => {
+                try {
+                  setSelectedAmount(amount);
+                } catch (error) {
+                  logger.error('Error setting tip amount', {
+                    amount,
+                    error
+                  });
+                }
+              }}
             >
               <Text
                 style={[

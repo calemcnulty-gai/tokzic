@@ -1,14 +1,14 @@
 import type { ThunkAction, Action } from '@reduxjs/toolkit';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import type { VideoQuality } from './slices/videoQualitySlice';
+
 import type { RouteType } from './slices/navigationSlice';
-import type { Video, VideoMetadata } from '../types/firestore';
+import type { VideoData } from '../services/video';
+import type { VideoMetadata, Comment, Like, Dislike, Tip } from '../types/firestore';
 
 // Root State Types
 export interface RootState {
   auth: AuthState;
   feed: FeedState;
-  videoQuality: VideoQualityState;
   gesture: GestureState;
   navigation: NavigationState;
   interaction: InteractionState;
@@ -32,7 +32,7 @@ export interface AuthState {
 // Feed State
 export interface FeedState {
   videos: {
-    video: Video;
+    video: VideoData;
     metadata: VideoMetadata;
   }[];
   lastVisible: any; // Firebase QueryDocumentSnapshot
@@ -42,15 +42,6 @@ export interface FeedState {
   error: string | null;
 }
 
-// Video Quality State
-export interface VideoQualityState {
-  currentQuality: VideoQuality;
-  availableQualities: VideoQuality[];
-  autoQualityEnabled: boolean;
-  networkType: 'wifi' | 'cellular' | 'unknown';
-  batteryLevel: number;
-  isLowPowerMode: boolean;
-}
 
 // Gesture State
 export interface GestureState {

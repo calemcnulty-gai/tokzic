@@ -1,6 +1,8 @@
-import { db as firestore } from '../config/firebase';
+import { db } from '../config/firebase';
 import { Collections, VideoMetadata, Comment, Like, Tip } from '../types/firestore';
 import { createLogger } from '../utils/logger';
+import { query, where, orderBy, limit, Timestamp } from '@react-native-firebase/firestore';
+import firestore from '@react-native-firebase/firestore';
 
 const logger = createLogger('VideoMetadata');
 
@@ -12,7 +14,7 @@ export class VideoMetadataService {
     try {
       logger.info('Fetching metadata for videos', { count: videoIds.length });
       
-      const videosRef = firestore.collection(Collections.VIDEOS);
+      const videosRef = db.collection(Collections.VIDEOS);
       const snapshots = await Promise.all(
         videoIds.map(id => videosRef.doc(id).get())
       );
@@ -36,7 +38,7 @@ export class VideoMetadataService {
     try {
       logger.info('Fetching metadata for video', { videoId });
       
-      const videoRef = firestore.collection(Collections.VIDEOS).doc(videoId);
+      const videoRef = db.collection(Collections.VIDEOS).doc(videoId);
       const snapshot = await videoRef.get();
 
       if (!snapshot.exists) {
@@ -60,10 +62,10 @@ export class VideoMetadataService {
     try {
       logger.info('Updating video metadata', { videoId, updates });
       
-      const videoRef = firestore.collection(Collections.VIDEOS).doc(videoId);
+      const videoRef = db.collection(Collections.VIDEOS).doc(videoId);
       await videoRef.update({
         ...updates,
-        updatedAt: firestore.Timestamp.now()
+        updatedAt: Timestamp.now()
       });
 
       logger.info('Successfully updated metadata');
@@ -80,15 +82,14 @@ export class VideoMetadataService {
     try {
       logger.info('Creating default metadata for video', { videoId });
       
-      const videoRef = firestore.collection(Collections.VIDEOS).doc(videoId);
+      const videoRef = db.collection(Collections.VIDEOS).doc(videoId);
       const metadata: Omit<VideoMetadata, 'id'> = {
         title: "Untitled",
         description: "Sample video for testing",
-        createdAt: firestore.Timestamp.now(),
+        createdAt: Date.now(),
         creatorId: "system",
         creator: {
-          username: "System",
-          avatarUrl: null
+          username: "System"
         },
         stats: {
           views: 0,
@@ -118,7 +119,7 @@ export class VideoMetadataService {
     try {
       logger.info(`Fetching comments for video: ${videoId}`);
       
-      let query = firestore.collection(Collections.COMMENTS)
+      let query = db.collection(Collections.COMMENTS)
         .where('videoId', '==', videoId)
         .orderBy('createdAt', 'desc')
         .limit(limit);
@@ -136,7 +137,7 @@ export class VideoMetadataService {
       logger.info(`Fetched ${comments.length} comments`);
       return comments;
     } catch (error) {
-      logger.error('Error fetching comments:', error);
+      logger.error('Error fetching comments:', { error: error instanceof Error ? error.message : 'Unknown error' });
       throw error;
     }
   }
@@ -170,16 +171,16 @@ export class VideoMetadataService {
         createdAt: Date.now(),
       };
 
-      logger.info('Constructed comment object:', JSON.stringify(comment, null, 2));
+      logger.info('Constructed comment object:', { comment });
 
       // Add to comments collection
-      logger.info('Attempting to add to Firestore...');
-      await firestore.collection(Collections.COMMENTS)
+      logger.info('Attempting to add to Firestore...', { videoId });
+      await db.collection(Collections.COMMENTS)
         .add(comment);
 
       logger.info('Updating comment count...');
       // Update comment count
-      await firestore.collection(Collections.VIDEOS)
+      await db.collection(Collections.VIDEOS)
         .doc(videoId)
         .update({
           'stats.comments': firestore.FieldValue.increment(1)
@@ -187,19 +188,18 @@ export class VideoMetadataService {
 
       logger.info('Successfully added comment');
     } catch (error) {
-      logger.error('Error adding comment:', error);
+      logger.error('Error adding comment:', { error: error instanceof Error ? error.message : 'Unknown error' });
       if (error instanceof Error) {
         logger.error('Error details:', {
           message: error.message,
           name: error.name,
-          stack: error.stack
-        });
-        // Log the state at time of error
-        logger.error('State at time of error:', {
-          videoId,
-          userId,
-          text,
-          userInfo: JSON.stringify(userInfo)
+          stack: error.stack,
+          state: {
+            videoId,
+            userId,
+            text,
+            userInfo: JSON.stringify(userInfo)
+          }
         });
       }
       throw error;
@@ -217,14 +217,14 @@ export class VideoMetadataService {
   ): Promise<void> {
     try {
       logger.info(`Adding tip of $${amount} to video ${videoId}`);
-      await firestore.collection(Collections.VIDEOS)
+      await db.collection(Collections.VIDEOS)
         .doc(videoId)
         .update({
           'stats.tips': firestore.FieldValue.increment(amount)
         });
       logger.info('Successfully added tip');
     } catch (error) {
-      logger.error('Error sending tip:', error);
+      logger.error('Error sending tip:', { error: error instanceof Error ? error.message : 'Unknown error' });
       if (error instanceof Error) {
         logger.error('Error details:', {
           message: error.message,
@@ -241,7 +241,7 @@ export class VideoMetadataService {
    */
   async incrementViewCount(videoId: string): Promise<void> {
     try {
-      const videoRef = firestore.collection(Collections.VIDEOS)
+      const videoRef = db.collection(Collections.VIDEOS)
         .doc(videoId);
 
       // First try to get the document
@@ -249,16 +249,15 @@ export class VideoMetadataService {
 
       if (!doc.exists) {
         // If document doesn't exist, create it with default metadata
-        logger.info('Creating default metadata for video:', videoId);
+        logger.info('Creating default metadata for video', { videoId });
         await videoRef.set({
           id: videoId,
           title: "Untitled",
           description: "Sample video for testing",
-          createdAt: firestore.Timestamp.now(),
+          createdAt: Timestamp.now(),
           creatorId: "system",
           creator: {
-            username: "System",
-            avatarUrl: null
+            username: "System"
           },
           stats: {
             views: 1, // Start at 1 since this is the first view
@@ -275,13 +274,13 @@ export class VideoMetadataService {
       }
 
       // If document exists, increment the view count
-      logger.info('Incrementing view count for video:', videoId);
+      logger.info('Incrementing view count for video', { videoId });
       await videoRef.update({
         'stats.views': firestore.FieldValue.increment(1)
       });
       logger.info('Successfully incremented view count');
     } catch (error) {
-      logger.error('Error incrementing view count:', error);
+      logger.error('Error incrementing view count:', { error: error instanceof Error ? error.message : 'Unknown error' });
       if (error instanceof Error) {
         logger.error('Error details:', {
           message: error.message,
@@ -309,13 +308,13 @@ export class VideoMetadataService {
         docId: `${videoId}_${userId}`
       });
 
-      const likeRef = firestore.collection(Collections.LIKES)
+      const likeRef = db.collection(Collections.LIKES)
         .doc(`${videoId}_${userId}`);
 
       const likeDoc = await likeRef.get();
-      logger.info('Like document exists?', likeDoc.exists);
+      logger.info('Like document exists?', { exists: likeDoc.exists });
       
-      const videoRef = firestore.collection(Collections.VIDEOS).doc(videoId);
+      const videoRef = db.collection(Collections.VIDEOS).doc(videoId);
 
       if (likeDoc.exists) {
         // Unlike
@@ -344,7 +343,7 @@ export class VideoMetadataService {
         return true;
       }
     } catch (error) {
-      logger.error('Error toggling like:', error);
+      logger.error('Error toggling like:', { error: error instanceof Error ? error.message : 'Unknown error' });
       if (error instanceof Error) {
         logger.error('Error details:', {
           message: error.message,
@@ -374,13 +373,13 @@ export class VideoMetadataService {
         docId: `${videoId}_${userId}`
       });
 
-      const dislikeRef = firestore.collection(Collections.DISLIKES)
+      const dislikeRef = db.collection(Collections.DISLIKES)
         .doc(`${videoId}_${userId}`);
 
       const dislikeDoc = await dislikeRef.get();
-      logger.info('disLike document exists?', dislikeDoc.exists);
+      logger.info('disLike document exists?', { exists: dislikeDoc.exists });
       
-      const videoRef = firestore.collection(Collections.VIDEOS).doc(videoId);
+      const videoRef = db.collection(Collections.VIDEOS).doc(videoId);
 
       if (dislikeDoc.exists) {
         // Undislike
@@ -409,7 +408,7 @@ export class VideoMetadataService {
         return true;
       }
     } catch (error) {
-      logger.error('Error toggling dislike:', error);
+      logger.error('Error toggling dislike:', { error: error instanceof Error ? error.message : 'Unknown error' });
       if (error instanceof Error) {
         logger.error('Error details:', {
           message: error.message,
@@ -434,14 +433,14 @@ export class VideoMetadataService {
   ): Promise<void> {
     try {
       logger.info(`Adding negative tip of -$${amount} to video ${videoId}`);
-      await firestore.collection(Collections.VIDEOS)
+      await db.collection(Collections.VIDEOS)
         .doc(videoId)
         .update({
           'stats.tips': firestore.FieldValue.increment(-amount)
         });
       logger.info('Successfully added negative tip');
     } catch (error) {
-      logger.error('Error sending negative tip:', error);
+      logger.error('Error sending negative tip:', { error: error instanceof Error ? error.message : 'Unknown error' });
       if (error instanceof Error) {
         logger.error('Error details:', {
           message: error.message,
@@ -449,6 +448,28 @@ export class VideoMetadataService {
           stack: error.stack
         });
       }
+      throw error;
+    }
+  }
+
+  /**
+   * Fetches recent metadata
+   */
+  async fetchRecentMetadata(limitCount: number = 10): Promise<VideoMetadata[]> {
+    try {
+      const metadataQuery = query(
+        db.collection(Collections.VIDEOS),
+        orderBy('createdAt', 'desc'),
+        limit(limitCount)
+      );
+      
+      const snapshot = await metadataQuery.get();
+      return snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      } as VideoMetadata));
+    } catch (error) {
+      logger.error('Failed to fetch recent metadata', { error: error instanceof Error ? error.message : 'Unknown error' });
       throw error;
     }
   }

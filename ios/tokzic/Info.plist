@@ -37,6 +37,18 @@
           <string>exp+tokzic</string>
         </array>
       </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>com.googleusercontent.apps.198315157775-8usrulmcn1hm313o8iu1mfpua7fesfkr</string>
+        </array>
+      </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>tokzic-mobile.firebaseapp.com</string>
+        </array>
+      </dict>
     </array>
     <key>CFBundleVersion</key>
     <string>1.0.0</string>

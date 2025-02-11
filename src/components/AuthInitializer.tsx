@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import auth from '@react-native-firebase/auth';
+import { auth } from '../config/firebase';
 import { useDispatch } from 'react-redux';
 import { setUser } from '../store/slices/authSlice';
 import { createLogger } from '../utils/logger';
@@ -12,7 +12,7 @@ export function AuthInitializer({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     logger.info('Setting up auth state listener');
-    const unsubscribe = auth().onAuthStateChanged(user => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
       logger.info('Auth state changed', { userId: user?.uid });
       const mappedUser = mapFirebaseUser(user);
       dispatch(setUser(mappedUser));

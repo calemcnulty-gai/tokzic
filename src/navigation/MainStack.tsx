@@ -3,7 +3,7 @@ import { View, Text } from 'react-native';
 import { styled } from 'nativewind';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MainStackParamList } from './types';
-import { TabNavigator } from './TabNavigator';
+import { FeedScreen } from '../screens/feed/FeedScreen';
 import { useTheme } from '../theme/ThemeProvider';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -33,7 +33,7 @@ export const MainStack = () => {
         contentStyle: { backgroundColor: theme.colors.background.primary },
       }}
     >
-      <Stack.Screen name="Tabs" component={TabNavigator} />
+      <Stack.Screen name="Feed" component={FeedScreen} />
       <Stack.Group screenOptions={{ presentation: 'modal' }}>
         <Stack.Screen name="VideoDetail" component={VideoDetailScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />

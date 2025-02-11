@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, Middleware, ConfigureStoreOptions } from '@reduxjs/toolkit';
 import { useDispatch } from 'react-redux';
 import authReducer from './slices/authSlice';
 import videoReducer from './slices/videoSlice';
@@ -6,7 +6,9 @@ import gestureReducer from './slices/gestureSlice';
 import navigationReducer from './slices/navigationSlice';
 import interactionReducer from './slices/interactionSlice';
 import uiReducer from './slices/uiSlice';
-import { performanceMiddleware } from './middleware/performanceMiddleware';
+// Performance middleware temporarily removed - can be re-added when we need more detailed
+// performance monitoring and analytics. See /src/store/middleware/performanceMiddleware.ts
+// import { performanceMiddleware } from './middleware/performanceMiddleware';
 import { loggingMiddleware } from './middleware/loggingMiddleware';
 import { createLogger } from '../utils/logger';
 
@@ -21,9 +23,9 @@ const reducer = {
   ui: uiReducer,
 };
 
-export const store = configureStore({
+const storeConfig: ConfigureStoreOptions<any> = {
   reducer,
-  middleware: (getDefaultMiddleware) => 
+  middleware: getDefaultMiddleware => 
     getDefaultMiddleware({
       serializableCheck: {
         // Ignore these action types
@@ -34,29 +36,40 @@ export const store = configureStore({
           'video/refresh/fulfilled',
         ],
         // Ignore these field paths in all actions
-        ignoredActionPaths: ['payload.lastVisible'],
+        ignoredActionPaths: [
+          'payload.lastVisible',
+          'payload.videos.*.metadata',  // Ignore metadata in video arrays
+          'payload.metadata',           // Ignore individual metadata objects
+          'meta.arg.metadata'           // Ignore metadata in thunk arguments
+        ],
         // Ignore these paths in the state
-        ignoredPaths: ['video.lastVisible'],
+        ignoredPaths: [
+          'video.lastVisible',
+          'video.videos.*.metadata',    // Ignore metadata in video arrays
+          'video.currentVideo.metadata' // Ignore current video metadata
+        ],
       },
       thunk: {
         extraArgument: undefined,
       },
-    }).concat(performanceMiddleware, loggingMiddleware),
+    }).concat(loggingMiddleware),
   devTools: {
     name: 'Tokzic',
     maxAge: 50,
     trace: true,
     traceLimit: 25,
     actionsDenylist: ['video/setQuality'], // High frequency actions
-    stateSanitizer: (state) => ({
+    stateSanitizer: (state: any) => ({
       ...state,
-      video: {
+      video: state.video ? {
         ...state.video,
-        videos: state.video.videos.length, // Just show count for large arrays
-      },
+        videos: state.video.videos?.length ?? 0, // Just show count for large arrays
+      } : undefined,
     }),
   },
-});
+};
+
+export const store = configureStore(storeConfig);
 
 // Export types and hooks
 export type RootState = ReturnType<typeof store.getState>;

@@ -1,4 +1,4 @@
-import { Middleware } from '@reduxjs/toolkit';
+import { Middleware, AnyAction } from '@reduxjs/toolkit';
 import { createLogger } from '../../utils/logger';
 
 const logger = createLogger('ReduxLogger');
@@ -23,9 +23,10 @@ const getStateValue = (state: any, path: string) => {
   return path.split('.').reduce((obj, key) => obj && obj[key], state);
 };
 
-export const loggingMiddleware: Middleware = store => next => action => {
+export const loggingMiddleware: Middleware<{}, any, any> = store => next => (action: unknown) => {
+  const typedAction = action as AnyAction;
   // Skip logging for ignored actions
-  if (IGNORED_ACTIONS.includes(action.type)) {
+  if (IGNORED_ACTIONS.includes(typedAction.type)) {
     return next(action);
   }
 
@@ -34,8 +35,8 @@ export const loggingMiddleware: Middleware = store => next => action => {
 
   // Log action with relevant metadata
   logger.info('Action dispatched', {
-    type: action.type,
-    payload: action.payload,
+    type: typedAction.type,
+    payload: typedAction.payload,
     timestamp: new Date().toISOString()
   });
 
@@ -64,7 +65,7 @@ export const loggingMiddleware: Middleware = store => next => action => {
   // Log state changes if any monitored paths changed
   if (hasImportantChanges) {
     logger.info('State updated', {
-      action: action.type,
+      action: typedAction.type,
       changes: stateChanges,
       duration: `${duration.toFixed(2)}ms`
     });

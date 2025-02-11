@@ -1,11 +1,15 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { auth } from '../../config/firebase';
+import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { createLogger } from '../../utils/logger';
 import { User, mapFirebaseUser } from '../../types/auth';
 import { AppDispatch, RootState } from '../';
 import { initializeVideoBuffer } from './videoSlice';
 
 const logger = createLogger('AuthSlice');
+
+// Store unsubscribe function at module level
+let authStateUnsubscribe: (() => void) | null = null;
 
 interface AuthState {
   user: User | null;
@@ -41,9 +45,9 @@ export const initializeAuth = createAsyncThunk(
     try {
       let isResolved = false;
       await new Promise<void>((resolve) => {
-        const unsubscribe = auth().onAuthStateChanged(async (firebaseUser) => {
+        const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
           try {
-            if (isResolved) return; // Skip if we've already resolved
+            if (isResolved) return;
 
             if (firebaseUser) {
               logger.info('User authenticated in auth listener', { 
@@ -59,7 +63,6 @@ export const initializeAuth = createAsyncThunk(
               logger.info('Null user state updated in Redux');
             }
 
-            // Wait a bit to ensure auth state has stabilized
             setTimeout(() => {
               if (!isResolved) {
                 isResolved = true;
@@ -74,38 +77,25 @@ export const initializeAuth = createAsyncThunk(
             }
           }
         });
-        
-        logger.info('Auth state listener registered');
-        (auth() as any)._authStateUnsubscribe = unsubscribe;
+
+        // Store unsubscribe function in module-level variable
+        authStateUnsubscribe = unsubscribe;
       });
 
-      logger.info('Auth initialization complete');
+      return;
     } catch (error) {
-      logger.error('Failed to initialize auth', { 
-        error: error instanceof Error ? {
-          message: error.message,
-          name: error.name,
-          stack: error.stack
-        } : error 
-      });
+      logger.error('Failed to initialize auth', { error });
       throw error;
     }
   }
 );
 
-// Clean up auth listener
 export const cleanupAuth = createAsyncThunk(
   'auth/cleanup',
   async () => {
-    try {
-      const unsubscribe = (auth() as any)._authStateUnsubscribe;
-      if (unsubscribe) {
-        unsubscribe();
-        delete (auth() as any)._authStateUnsubscribe;
-      }
-    } catch (error) {
-      logger.error('Failed to cleanup auth', { error });
-      throw error;
+    if (authStateUnsubscribe) {
+      authStateUnsubscribe();
+      authStateUnsubscribe = null;
     }
   }
 );
@@ -114,7 +104,7 @@ export const signIn = createAsyncThunk(
   'auth/signIn',
   async ({ email, password }: { email: string; password: string }) => {
     try {
-      const result = await auth().signInWithEmailAndPassword(email, password);
+      const result = await auth.signInWithEmailAndPassword(email, password);
       return result.user;
     } catch (error) {
       logger.error('Sign in failed', { error });
@@ -127,7 +117,7 @@ export const signUp = createAsyncThunk(
   'auth/signUp',
   async ({ email, password }: { email: string; password: string }) => {
     try {
-      const result = await auth().createUserWithEmailAndPassword(email, password);
+      const result = await auth.createUserWithEmailAndPassword(email, password);
       return result.user;
     } catch (error) {
       logger.error('Sign up failed', { error });
@@ -140,7 +130,7 @@ export const signOut = createAsyncThunk(
   'auth/signOut',
   async () => {
     try {
-      await auth().signOut();
+      await auth.signOut();
     } catch (error) {
       logger.error('Sign out failed', { error });
       throw error;

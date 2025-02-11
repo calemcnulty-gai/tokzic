@@ -1,9 +1,14 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import firestore from '@react-native-firebase/firestore';
+import { db } from '../../config/firebase';
+import { Collections } from '../../types/firestore';
 import { createLogger } from '../../utils/logger';
 import type { Comment, Like, Dislike, Tip } from '../../types/firestore';
+import { collection, query, where, orderBy, limit, getDocs, addDoc, deleteDoc } from '@react-native-firebase/firestore';
 
 const logger = createLogger('InteractionSlice');
+
+// Define the collection reference once
+const interactionsRef = collection(db, Collections.COMMENTS);
 
 interface InteractionState {
   comments: Record<string, Comment[]>; // videoId -> comments
@@ -27,11 +32,13 @@ export const fetchVideoComments = createAsyncThunk(
   'interaction/fetchComments',
   async (videoId: string) => {
     try {
-      const snapshot = await firestore()
-        .collection('comments')
-        .where('videoId', '==', videoId)
-        .orderBy('timestamp', 'desc')
-        .get();
+      const commentsQuery = query(
+        interactionsRef,
+        where('videoId', '==', videoId),
+        orderBy('timestamp', 'desc')
+      );
+      
+      const snapshot = await getDocs(commentsQuery);
 
       return {
         videoId,
@@ -61,9 +68,7 @@ export const addComment = createAsyncThunk(
         videoId,
       };
 
-      const docRef = await firestore()
-        .collection('comments')
-        .add(comment);
+      const docRef = await addDoc(interactionsRef, comment);
 
       return {
         videoId,
@@ -84,13 +89,14 @@ export const toggleLike = createAsyncThunk(
     type?: 'like' | 'superLike';
   }) => {
     try {
-      const likeRef = firestore()
-        .collection('likes')
-        .where('videoId', '==', videoId)
-        .where('userId', '==', userId)
-        .limit(1);
+      const likeQuery = query(
+        interactionsRef,
+        where('videoId', '==', videoId),
+        where('userId', '==', userId),
+        limit(1)
+      );
 
-      const snapshot = await likeRef.get();
+      const snapshot = await getDocs(likeQuery);
 
       if (snapshot.empty) {
         const like: Omit<Like, 'id'> = {
@@ -100,9 +106,7 @@ export const toggleLike = createAsyncThunk(
           createdAt: Date.now(),
         };
 
-        const docRef = await firestore()
-          .collection('likes')
-          .add(like);
+        const docRef = await addDoc(interactionsRef, like);
 
         return {
           videoId,
@@ -110,7 +114,7 @@ export const toggleLike = createAsyncThunk(
           action: 'add',
         };
       } else {
-        await snapshot.docs[0].ref.delete();
+        await deleteDoc(snapshot.docs[0].ref);
         return {
           videoId,
           likeId: snapshot.docs[0].id,

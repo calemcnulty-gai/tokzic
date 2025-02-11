@@ -8,7 +8,6 @@ Screens are organized by feature, with each feature having its own directory:
 ```
 screens/
 ├── auth/          # Authentication related screens
-├── discover/      # Discovery and search screens
 ├── feed/          # Main feed and video viewing screens
 └── [feature]/     # Future features get their own directory
 ```

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import { Video } from '../../services/video';
+import { VideoData } from '../../services/video';
 import { VideoMetadata } from '../../types/firestore';
 import { VideoPlayer } from '../VideoPlayer';
 import { createLogger } from '../../utils/logger';
@@ -9,7 +9,7 @@ import { theme } from '../../theme/theme';
 const logger = createLogger('VideoFeed');
 
 interface VideoFeedProps {
-  videos: Video[];
+  videos: VideoData[];
   metadata: Record<string, VideoMetadata>;
   currentIndex: number;
   onIndexChange?: (index: number) => void;

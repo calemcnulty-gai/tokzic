@@ -1,6 +1,8 @@
-import { db as firestore } from '../config/firebase';
+import { db } from '../config/firebase';
 import { Collections, VideoMetadata, Comment, Like, Tip } from '../types/firestore';
 import { createLogger } from '../utils/logger';
+import { query, where, orderBy, limit, FieldValue, Timestamp } from '@react-native-firebase/firestore';
+import firestore from '@react-native-firebase/firestore';
 
 const logger = createLogger('VideoInteractions');
 
@@ -10,7 +12,7 @@ export class VideoInteractionService {
    */
   async incrementViewCount(videoId: string): Promise<void> {
     try {
-      const videoRef = firestore
+      const videoRef = db
         .collection(Collections.VIDEOS)
         .doc(videoId);
 
@@ -23,7 +25,7 @@ export class VideoInteractionService {
           id: videoId,
           title: "Untitled",
           description: "Sample video for testing",
-          createdAt: firestore.Timestamp.now(),
+          createdAt: Date.now(),
           creatorId: "system",
           creator: {
             username: "System",
@@ -58,12 +60,12 @@ export class VideoInteractionService {
   async toggleLike(videoId: string, userId: string): Promise<boolean> {
     try {
       logger.info('Toggling like', { videoId, userId });
-      const likeRef = firestore
+      const likeRef = db
         .collection(Collections.LIKES)
         .doc(`${videoId}_${userId}`);
 
       const likeDoc = await likeRef.get();
-      const videoRef = firestore.collection(Collections.VIDEOS).doc(videoId);
+      const videoRef = db.collection(Collections.VIDEOS).doc(videoId);
 
       if (likeDoc.exists) {
         await likeRef.delete();
@@ -97,12 +99,12 @@ export class VideoInteractionService {
   async toggleDislike(videoId: string, userId: string): Promise<boolean> {
     try {
       logger.info('Toggling dislike', { videoId, userId });
-      const dislikeRef = firestore
+      const dislikeRef = db
         .collection(Collections.DISLIKES)
         .doc(`${videoId}_${userId}`);
 
       const dislikeDoc = await dislikeRef.get();
-      const videoRef = firestore.collection(Collections.VIDEOS).doc(videoId);
+      const videoRef = db.collection(Collections.VIDEOS).doc(videoId);
 
       if (dislikeDoc.exists) {
         await dislikeRef.delete();
@@ -136,7 +138,7 @@ export class VideoInteractionService {
   async fetchComments(videoId: string, limit = 50, startAfter?: number): Promise<Comment[]> {
     try {
       logger.info('Fetching comments', { videoId, limit, startAfter });
-      let query = firestore
+      let query = db
         .collection(Collections.COMMENTS)
         .where('videoId', '==', videoId)
         .orderBy('createdAt', 'desc')
@@ -182,11 +184,11 @@ export class VideoInteractionService {
         createdAt: Date.now(),
       };
 
-      await firestore
+      await db
         .collection(Collections.COMMENTS)
         .add(comment);
 
-      await firestore
+      await db
         .collection(Collections.VIDEOS)
         .doc(videoId)
         .update({

@@ -1,4 +1,4 @@
-import { Env } from '@env';
+import type { FIREBASE_API_KEY } from '@env';
 
 /**
  * Configuration utility to handle environment variables with type safety
@@ -6,10 +6,10 @@ import { Env } from '@env';
  */
 class Config {
   private static instance: Config;
-  private env: Partial<Env>;
+  private env: NodeJS.ProcessEnv & typeof process.env;
 
   private constructor() {
-    this.env = process.env as unknown as Partial<Env>;
+    this.env = process.env as NodeJS.ProcessEnv & typeof process.env;
   }
 
   public static getInstance(): Config {

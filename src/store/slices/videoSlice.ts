@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { VideoData, fetchVideosAfter, fetchVideosBefore, VideoWithMetadata, videoService } from '../../services/video';
+import { VideoData, VideoWithMetadata, videoService } from '../../services/video';
 import { VideoMetadata, Comment } from '../../types/firestore';
 import { createLogger } from '../../utils/logger';
 import type { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
@@ -15,6 +15,7 @@ import { createSwipe } from '../../services/swipe';
 import { RootState } from '../../store';
 import { SwipeDirection } from '../../components/SwipeableVideoPlayer';
 import type { AVPlaybackStatus, AVPlaybackStatusSuccess } from 'expo-av';
+import { createSelector } from '@reduxjs/toolkit';
 
 const logger = createLogger('VideoSlice');
 
@@ -111,7 +112,7 @@ const initialState: VideoState = {
     lastSwipeTime: 0,
   },
   player: {
-    isPlaying: false,
+    isPlaying: true,
     isMuted: false,
     volume: 1,
     position: 0,
@@ -133,20 +134,65 @@ export const initializeVideoBuffer = createAsyncThunk(
       logger.info('Starting video buffer initialization');
       const result = await videoService.fetchVideos(BUFFER_SIZE);
       
+      // Log raw video data for debugging
+      logger.debug('Raw video data from service', {
+        totalVideos: result.videos.length,
+        videoDetails: result.videos.map(v => ({
+          id: v.video.id,
+          hasUrl: !!v.video.url,
+          hasMetadata: !!v.metadata,
+          metadataType: v.metadata ? typeof v.metadata : 'undefined',
+          metadataFields: v.metadata ? Object.keys(v.metadata) : []
+        }))
+      });
+      
       // Validate videos have Firebase Storage URLs
       const videosWithoutUrls = result.videos.filter(v => !v.video.url?.startsWith('https://firebasestorage.googleapis.com'));
       if (videosWithoutUrls.length > 0) {
         logger.error('Some videos are missing valid Firebase Storage URLs', {
-          videoIds: videosWithoutUrls.map(v => v.video.id)
+          totalVideos: result.videos.length,
+          invalidVideos: videosWithoutUrls.map(v => ({
+            id: v.video.id,
+            url: v.video.url,
+            hasMetadata: !!v.metadata,
+            metadataType: typeof v.metadata
+          }))
         });
         throw new Error('Failed to initialize: some videos are missing valid Firebase Storage URLs');
+      }
+      
+      // Validate metadata
+      const videosWithInvalidMetadata = result.videos.filter(v => {
+        if (!v.metadata) return true;
+        if (typeof v.metadata === 'string') {
+          try {
+            const parsed = JSON.parse(v.metadata);
+            return !parsed.id || !parsed.stats;
+          } catch {
+            return true;
+          }
+        }
+        return !v.metadata.id || !v.metadata.stats;
+      });
+      
+      if (videosWithInvalidMetadata.length > 0) {
+        logger.error('Some videos have invalid metadata', {
+          totalVideos: result.videos.length,
+          invalidVideos: videosWithInvalidMetadata.map(v => ({
+            id: v.video.id,
+            metadataType: typeof v.metadata,
+            rawMetadata: v.metadata
+          }))
+        });
+        throw new Error('Failed to initialize: some videos have invalid metadata');
       }
       
       logger.info('Successfully initialized video buffer', { 
         videoCount: result.videos.length,
         hasLastVisible: !!result.lastVisible,
         videoIds: result.videos.map(v => v.video.id),
-        urlsValid: result.videos.every(v => v.video.url?.startsWith('https://firebasestorage.googleapis.com'))
+        urlsValid: result.videos.every(v => v.video.url?.startsWith('https://firebasestorage.googleapis.com')),
+        metadataValid: result.videos.every(v => v.metadata && (!('stats' in v.metadata) || v.metadata.stats))
       });
       return result;
     } catch (error) {
@@ -154,7 +200,8 @@ export const initializeVideoBuffer = createAsyncThunk(
         error: error instanceof Error ? {
           message: error.message,
           name: error.name,
-          stack: error.stack
+          stack: error.stack,
+          cause: error.cause
         } : error,
         bufferSize: BUFFER_SIZE
       });
@@ -212,7 +259,7 @@ export const rotateBackward = createAsyncThunk(
       if (currentIndex <= 2 && !isAtStart) {
         const firstVideo = videos[0].video;
         logger.info('Fetching previous videos for backward rotation');
-        const prevVideos = await fetchVideosBefore(VIDEOS_PER_PAGE, firstVideo.id);
+        const prevVideos = await videoService.fetchVideosBefore(VIDEOS_PER_PAGE, firstVideo.id);
         
         if (prevVideos.length === 0) {
           return { isAtStart: true };
@@ -453,6 +500,7 @@ const videoSlice = createSlice({
         state.isLoading = false;
         state.isAtStart = true;
         state.isInitialized = true;
+        state.player.isPlaying = true;
       })
       .addCase(initializeVideoBuffer.rejected, (state, action) => {
         logger.error('Video buffer initialization rejected', {
@@ -694,38 +742,76 @@ const videoSlice = createSlice({
   }
 });
 
-// Selectors
-export const selectCurrentVideo = (state: RootState) => state.video.currentVideo;
-export const selectVideoComments = (state: RootState, videoId: string) => 
-  state.video.interactions[videoId]?.comments || [];
-export const selectIsLoadingComments = (state: RootState) => 
-  state.video.loadingStates.isLoadingComments;
-export const selectCommentsVisibility = (state: RootState) => 
-  state.ui.isCommentsVisible;
-export const selectSwipeState = (state: RootState) => state.video.swipeState;
-export const selectVideoLikeStatus = (state: RootState, videoId: string) => ({
-  isLiked: state.video.interactions[videoId]?.isLiked || false,
-  isDisliked: state.video.interactions[videoId]?.isDisliked || false,
-});
-export const selectIsProcessingLike = (state: RootState) => 
-  state.video.loadingStates.isTogglingLike;
-export const selectIsProcessingTip = (state: RootState) => 
-  state.video.loadingStates.isProcessingTip;
+// Memoized base selectors
+const selectVideoState = (state: RootState) => state.video;
+const selectVideoInteractions = (state: RootState) => state.video.interactions;
+const selectVideoPlayer = (state: RootState) => state.video.player;
+const selectVideoFeed = (state: RootState) => state.video.feed;
 
-export const selectPlaybackState = (state: RootState) => ({
-  isPlaying: state.video.player.isPlaying,
-  isMuted: state.video.player.isMuted,
-  volume: state.video.player.volume,
-  position: state.video.player.position,
-  duration: state.video.player.duration,
-  isBuffering: state.video.player.isBuffering,
-});
+// Memoized complex selectors
+export const selectCurrentVideo = createSelector(
+  [selectVideoState],
+  (videoState) => videoState.currentVideo
+);
 
-export const selectFeedState = (state: RootState) => ({
-  activeIndex: state.video.feed.activeIndex,
-  mountTime: state.video.feed.mountTime,
-  lastIndexChangeTime: state.video.feed.lastIndexChangeTime,
-});
+export const selectVideoComments = createSelector(
+  [selectVideoInteractions, (_, videoId: string) => videoId],
+  (interactions, videoId) => interactions[videoId]?.comments || []
+);
+
+export const selectIsLoadingComments = createSelector(
+  [selectVideoState],
+  (videoState) => videoState.loadingStates.isLoadingComments
+);
+
+export const selectCommentsVisibility = createSelector(
+  [(state: RootState) => state.ui],
+  (ui) => ui.isCommentsVisible
+);
+
+export const selectSwipeState = createSelector(
+  [selectVideoState],
+  (videoState) => videoState.swipeState
+);
+
+export const selectVideoLikeStatus = createSelector(
+  [selectVideoInteractions, (_, videoId: string) => videoId],
+  (interactions, videoId) => ({
+    isLiked: interactions[videoId]?.isLiked || false,
+    isDisliked: interactions[videoId]?.isDisliked || false,
+  })
+);
+
+export const selectIsProcessingLike = createSelector(
+  [selectVideoState],
+  (videoState) => videoState.loadingStates.isTogglingLike
+);
+
+export const selectIsProcessingTip = createSelector(
+  [selectVideoState],
+  (videoState) => videoState.loadingStates.isProcessingTip
+);
+
+export const selectPlaybackState = createSelector(
+  [selectVideoPlayer],
+  (player) => ({
+    isPlaying: player.isPlaying,
+    isMuted: player.isMuted,
+    volume: player.volume,
+    position: player.position,
+    duration: player.duration,
+    isBuffering: player.isBuffering,
+  })
+);
+
+export const selectFeedState = createSelector(
+  [selectVideoFeed],
+  (feed) => ({
+    activeIndex: feed.activeIndex,
+    mountTime: feed.mountTime,
+    lastIndexChangeTime: feed.lastIndexChangeTime,
+  })
+);
 
 export const {
   clearError,

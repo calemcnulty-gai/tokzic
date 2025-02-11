@@ -25,6 +25,8 @@ import {
   handleCommentSubmission,
   selectVideoComments
 } from '../../store/slices/videoSlice';
+import { AnyAction, ThunkDispatch } from '@reduxjs/toolkit';
+import { RootState } from '../../store';
 
 const logger = createLogger('CommentPanel');
 
@@ -68,7 +70,9 @@ export const CommentPanel = memo(function CommentPanel({ videoId }: CommentPanel
     }
 
     try {
-      await dispatch(handleCommentSubmission({ text: commentText.trim() })).unwrap();
+      await (dispatch as ThunkDispatch<RootState, unknown, AnyAction>)(
+        handleCommentSubmission({ text: commentText.trim() })
+      ).unwrap();
       setCommentText('');
     } catch (error) {
       logger.error('Error submitting comment', { error });

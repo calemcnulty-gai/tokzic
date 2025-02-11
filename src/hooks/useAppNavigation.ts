@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation, useNavigationState } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import analytics from '@react-native-firebase/analytics';
 import {
   navigateTo,
@@ -11,13 +12,14 @@ import {
   type RouteType,
 } from '../store/slices/navigationSlice';
 import type { RootState, AppDispatch } from '../store';
+import { RootStackParamList } from '../navigation/types';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('useAppNavigation');
 
 export function useAppNavigation() {
   const dispatch = useDispatch<AppDispatch>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const navigationState = useNavigationState(state => state);
   
   const {

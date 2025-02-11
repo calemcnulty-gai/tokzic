@@ -2,7 +2,8 @@ import { useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Dimensions } from 'react-native';
 import type { GestureResponderEvent, PanResponderGestureState } from 'react-native';
-import type { RootState, AppDispatch } from '../store';
+import type { RootState } from '../store';
+import { AnyAction, ThunkDispatch } from '@reduxjs/toolkit';
 import {
   startGesture,
   endGesture,
@@ -24,7 +25,7 @@ interface UseVideoGesturesProps {
 }
 
 export function useVideoGestures({ videoId, userId }: UseVideoGesturesProps) {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch<ThunkDispatch<RootState, unknown, AnyAction>>();
   const {
     isDoubleTapEnabled,
     isSwipeEnabled,
