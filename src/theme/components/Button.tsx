@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { styled } from 'nativewind';
 import { Text } from './Text';
-import theme from '../theme';
+import { useTheme } from '../ThemeProvider';
 
 const StyledTouchableOpacity = styled(TouchableOpacity);
 
@@ -41,23 +41,6 @@ const textVariants = {
   danger: 'text-status-error font-bold',
 };
 
-const shadows = {
-  sm: {
-    shadowColor: theme.colors.neon.pink,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  md: {
-    shadowColor: theme.colors.neon.pink,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-};
-
 export const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
   size = 'md',
@@ -69,6 +52,7 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   ...props
 }) => {
+  const theme = useTheme();
   const baseClasses = 'flex-row items-center justify-center rounded-lg backdrop-blur-md';
   const variantClass = variants[variant];
   const sizeClass = sizeClasses[size];
@@ -76,7 +60,13 @@ export const Button: React.FC<ButtonProps> = ({
   const disabledClass = disabled || loading ? 'opacity-50' : '';
 
   const buttonStyle = [
-    variant === 'neon' ? shadows.md : shadows.sm,
+    {
+      shadowColor: theme.colors.neon.pink,
+      shadowOffset: { width: 0, height: variant === 'neon' ? 4 : 2 },
+      shadowOpacity: variant === 'neon' ? 0.15 : 0.1,
+      shadowRadius: variant === 'neon' ? 8 : 4,
+      elevation: variant === 'neon' ? 4 : 2,
+    },
     style,
   ];
 

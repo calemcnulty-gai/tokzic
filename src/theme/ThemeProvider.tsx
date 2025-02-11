@@ -1,38 +1,32 @@
-import React, { createContext, useContext, useEffect } from 'react';
-import { View } from 'react-native';
-import { styled } from 'nativewind';
-import theme, { Theme } from './theme';
+import React, { createContext, useContext } from 'react';
+import { theme, Theme } from './theme';
+import { createLogger } from '../utils/logger';
 
-const StyledView = styled(View);
+const logger = createLogger('ThemeProvider');
 
 const ThemeContext = createContext<Theme>(theme);
 
-export const useTheme = () => {
+export function useTheme(): Theme {
   const context = useContext(ThemeContext);
   if (!context) {
-    console.error('❌ useTheme must be used within a ThemeProvider');
+    logger.error('useTheme must be used within a ThemeProvider');
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
-};
-
-interface ThemeProviderProps {
-  children: React.ReactNode;
 }
 
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  useEffect(() => {
-    console.log('🎨 ThemeProvider mounted');
-    console.log('🎨 Theme config:', theme);
-    return () => console.log('🎨 ThemeProvider unmounted');
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  // Log mount/unmount for debugging
+  React.useEffect(() => {
+    logger.info('Component mounted');
+    logger.debug('Theme config', theme);
+    return () => logger.info('Component unmounted');
   }, []);
 
-  console.log('🔄 ThemeProvider rendering');
+  logger.debug('Component rendering');
   return (
     <ThemeContext.Provider value={theme}>
-      <StyledView className="flex-1 bg-background-primary">
-        {children}
-      </StyledView>
+      {children}
     </ThemeContext.Provider>
   );
-}; 
+} 

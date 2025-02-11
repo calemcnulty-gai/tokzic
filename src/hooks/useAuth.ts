@@ -1,57 +1,35 @@
-import { useState, useEffect } from 'react';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-
-interface AuthState {
-  user: FirebaseAuthTypes.User | null;
-  loading: boolean;
-  error: Error | null;
-}
+import { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { signOut, initializeAuth, cleanupAuth } from '../store/slices/authSlice';
+import type { RootState, AppDispatch } from '../store';
 
 export function useAuth() {
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    loading: true,
-    error: null,
-  });
+  const dispatch = useDispatch<AppDispatch>();
+  const { user, isLoading: loading, error, isInitialized } = useSelector((state: RootState) => state.auth);
 
+  // Initialize auth state listener
   useEffect(() => {
-    console.log('🔐 Setting up auth state listener...');
-    const unsubscribe = auth().onAuthStateChanged((user) => {
-      console.log('👤 Auth state changed:', {
-        uid: user?.uid,
-        email: user?.email,
-        isAnonymous: user?.isAnonymous,
-        providerId: user?.providerId,
-        metadata: user?.metadata,
-      });
+    dispatch(initializeAuth());
+    return () => {
+      dispatch(cleanupAuth());
+    };
+  }, [dispatch]);
 
-      setState({
-        user,
-        loading: false,
-        error: null,
-      });
-    });
-
-    // Cleanup subscription
-    return unsubscribe;
-  }, []);
-
-  const signOut = async () => {
+  const handleSignOut = async () => {
     try {
-      await auth().signOut();
-      console.log('👋 User signed out');
+      await dispatch(signOut()).unwrap();
     } catch (error) {
-      console.error('❌ Sign out error:', error);
-      setState((current) => ({
-        ...current,
-        error: error as Error,
-      }));
+      // Error is already handled in the slice
+      console.error('Sign out error:', error);
     }
   };
 
   return {
-    ...state,
-    signOut,
-    isAuthenticated: !!state.user,
+    user,
+    loading,
+    error,
+    isInitialized,
+    signOut: handleSignOut,
+    isAuthenticated: !!user,
   };
 } 

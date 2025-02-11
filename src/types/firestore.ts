@@ -1,35 +1,32 @@
 export interface VideoMetadata {
   id: string;
-  title: string;
-  description: string;
   createdAt: number;
   creatorId: string;
-  creator: {
+  title?: string;
+  description?: string;
+  creator?: {
     username: string;
-    avatarUrl?: string;
   };
   stats: {
     views: number;
     likes: number;
-    superLikes: number;
-    dislikes: number;
-    superDislikes: number;
-    comments: number;
-    tips: number;
+    superLikes?: number;
+    dislikes?: number;
+    superDislikes?: number;
+    comments?: number;
+    tips?: number;
+    penalties?: number;
   };
 }
 
 export interface Comment {
   id: string;
-  videoId: string;
-  userId: string;
   text: string;
-  createdAt: number;
-  user: {
-    username: string;
-    avatarUrl?: string;
-  };
-  likes: number;
+  userId: string;
+  username: string;
+  avatarUrl?: string;
+  timestamp: number;
+  videoId: string;
 }
 
 export interface Like {
@@ -75,14 +72,14 @@ export enum Collections {
   TIPS = 'tips',
   USERS = 'users',
   SWIPES = 'swipes',
+  NEGATIVE_TIPS = 'negative_tips',
 }
 
 export interface VideoStats {
   views: number;
   likes: number;
-  superLikes: number;
-  superDislikes: number;
   dislikes: number;
-  comments: number;
   tips: number;
+  negativeTips: number;
+  comments: number;
 } 

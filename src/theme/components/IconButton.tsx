@@ -6,7 +6,7 @@ import {
   View,
 } from 'react-native';
 import { styled } from 'nativewind';
-import theme from '../theme';
+import { useTheme } from '../ThemeProvider';
 
 const StyledTouchableOpacity = styled(TouchableOpacity);
 const StyledView = styled(View);
@@ -37,23 +37,6 @@ const iconSizeClasses = {
   lg: 'w-6 h-6',
 };
 
-const shadows = {
-  sm: {
-    shadowColor: theme.colors.neon.pink,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  md: {
-    shadowColor: theme.colors.neon.pink,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-};
-
 export const IconButton: React.FC<IconButtonProps> = ({
   variant = 'primary',
   size = 'md',
@@ -63,6 +46,7 @@ export const IconButton: React.FC<IconButtonProps> = ({
   style,
   ...props
 }) => {
+  const theme = useTheme();
   const baseClasses = 'items-center justify-center rounded-lg backdrop-blur-md';
   const variantClass = variants[variant];
   const sizeClass = sizeClasses[size];
@@ -70,7 +54,13 @@ export const IconButton: React.FC<IconButtonProps> = ({
   const disabledClass = disabled ? 'opacity-50' : '';
 
   const buttonStyle = [
-    variant === 'neon' ? shadows.md : shadows.sm,
+    {
+      shadowColor: theme.colors.neon.pink,
+      shadowOffset: { width: 0, height: variant === 'neon' ? 4 : 2 },
+      shadowOpacity: variant === 'neon' ? 0.15 : 0.1,
+      shadowRadius: variant === 'neon' ? 8 : 4,
+      elevation: variant === 'neon' ? 4 : 2,
+    },
     style,
   ];
 

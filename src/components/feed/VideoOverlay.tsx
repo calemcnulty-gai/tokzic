@@ -1,136 +1,43 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, LayoutAnimation, Platform, UIManager } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../theme/ThemeProvider';
 import { VideoMetadata } from '../../types/firestore';
-import firestore from '@react-native-firebase/firestore';
-import { Collections } from '../../types/firestore';
+import { createLogger } from '../../utils/logger';
+import { formatNumber } from '../../utils/format';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import {
+  toggleComments,
+  toggleTipSelector,
+  selectOverlayVisibility,
+  selectIsProcessingLike,
+  selectIsProcessingTip
+} from '../../store/slices/uiSlice';
+import {
+  handleVideoLike,
+  handleVideoDislike,
+  selectVideoLikeStatus
+} from '../../store/slices/videoSlice';
 
-// Enable LayoutAnimation for Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-// Get window dimensions
+const logger = createLogger('VideoOverlay');
 const { height: windowHeight } = Dimensions.get('window');
-const NAV_BAR_HEIGHT = windowHeight * 0.15; // 15% of screen height
-const TIP_AMOUNTS = [1, 2, 5, 10];
-const DEFAULT_TIP = 5;
+const NAV_BAR_HEIGHT = windowHeight * 0.15;
 
 interface VideoOverlayProps {
   metadata: VideoMetadata;
-  onLike: () => void;
-  onTip: (amount: number) => void;
-  onComment: () => void;
-  isLiked?: boolean;
-  onDislike?: () => void;
-  onNegativeTip?: (amount: number) => void;
-  isDisliked?: boolean;
 }
 
-export function VideoOverlay({ 
-  metadata, 
-  onLike, 
-  onTip, 
-  onComment, 
-  isLiked = false,
-  onDislike,
-  onNegativeTip,
-  isDisliked = false
-}: VideoOverlayProps) {
+export const VideoOverlay = React.memo(function VideoOverlay({ metadata }: VideoOverlayProps) {
   const theme = useTheme();
-  const [stats, setStats] = useState(metadata.stats);
-  const [isTipVisible, setIsTipVisible] = useState(false);
-  const [isNegativeTip, setIsNegativeTip] = useState(false);
-  const [selectedTipAmount, setSelectedTipAmount] = useState(DEFAULT_TIP);
-  const [contentOpacity] = useState(new Animated.Value(0));
-  const longPressTimeout = useRef<NodeJS.Timeout>();
+  const dispatch = useAppDispatch();
 
-  useEffect(() => {
-    // Subscribe to real-time updates for the video's stats
-    const unsubscribe = firestore()
-      .collection(Collections.VIDEOS)
-      .doc(metadata.id)
-      .onSnapshot(
-        (doc) => {
-          if (doc.exists) {
-            const data = doc.data();
-            if (data?.stats) {
-              setStats(data.stats);
-            }
-          }
-        },
-        (error) => {
-          console.error('Error in stats subscription:', error);
-        }
-      );
+  // Get all state from Redux
+  const isOverlayVisible = useAppSelector(selectOverlayVisibility);
+  const { isLiked, isDisliked } = useAppSelector(state => selectVideoLikeStatus(state, metadata.id));
+  const isProcessingLike = useAppSelector(selectIsProcessingLike);
+  const isProcessingTip = useAppSelector(selectIsProcessingTip);
 
-    return () => unsubscribe();
-  }, [metadata.id]);
-
-  useEffect(() => {
-    // Configure spring animation
-    LayoutAnimation.configureNext({
-      duration: 300,
-      create: {
-        type: LayoutAnimation.Types.spring,
-        property: LayoutAnimation.Properties.scaleXY,
-        springDamping: 0.7,
-      },
-      update: {
-        type: LayoutAnimation.Types.spring,
-        springDamping: 0.7,
-      },
-    });
-
-    // Fade content
-    Animated.spring(contentOpacity, {
-      toValue: isTipVisible ? 1 : 0,
-      useNativeDriver: true,
-      tension: 40,
-      friction: 7,
-    }).start();
-  }, [isTipVisible]);
-
-  const formatNumber = (num: number): string => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-    return num.toString();
-  };
-
-  const formatCurrency = (amount: number): string => {
-    return `$${amount.toFixed(2)}`;
-  };
-
-  const handleLikePress = () => {
-    onLike();
-  };
-
-  const handleTipPress = () => {
-    setIsNegativeTip(false);
-    setIsTipVisible(!isTipVisible);
-  };
-
-  const handleLikeLongPress = () => {
-    if (onDislike) {
-      onDislike();
-    }
-  };
-
-  const handleTipLongPress = () => {
-    setIsNegativeTip(true);
-    setIsTipVisible(!isTipVisible);
-  };
-
-  const handleSendTip = () => {
-    if (isNegativeTip && onNegativeTip) {
-      onNegativeTip(selectedTipAmount);
-    } else {
-      onTip(selectedTipAmount);
-    }
-    setIsTipVisible(false);
-    setIsNegativeTip(false);
-  };
+  if (!isOverlayVisible) return null;
 
   return (
     <>
@@ -138,40 +45,39 @@ export function VideoOverlay({
       <View 
         style={[
           styles.actionsContainer,
-          theme.glass.default,
-          isTipVisible && styles.actionsContainerExpanded
+          { backgroundColor: theme.colors.background.glass }
         ]}
       >
         <View style={styles.actionButtons}>
           <TouchableOpacity 
             style={styles.actionButton} 
-            onPress={handleLikePress}
-            onLongPress={handleLikeLongPress}
+            onPress={() => dispatch(handleVideoLike({ videoId: metadata.id }))}
+            onLongPress={() => dispatch(handleVideoDislike({ videoId: metadata.id }))}
             delayLongPress={500}
+            disabled={isProcessingLike}
           >
             <Icon 
-              name={isLiked || isDisliked ? 'heart' : 'heart-outline'} 
+              name={isLiked ? 'heart' : 'heart-outline'} 
               size={28} 
-              color={isDisliked ? theme.colors.neon.green : isLiked ? theme.colors.neon.pink : theme.colors.text.primary} 
+              color={isLiked ? theme.colors.neon.pink : theme.colors.text.primary} 
             />
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.actionButton} 
-            onPress={handleTipPress}
-            onLongPress={handleTipLongPress}
-            delayLongPress={500}
+            onPress={() => dispatch(toggleTipSelector())}
+            disabled={isProcessingTip}
           >
             <Icon 
               name="cash-outline" 
               size={28} 
-              color={isTipVisible ? (isNegativeTip ? theme.colors.neon.green : theme.colors.neon.pink) : theme.colors.text.primary} 
+              color={theme.colors.text.primary} 
             />
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.actionButton} 
-            onPress={onComment}
+            onPress={() => dispatch(toggleComments())}
           >
             <Icon 
               name="chatbubble-outline" 
@@ -180,74 +86,23 @@ export function VideoOverlay({
             />
           </TouchableOpacity>
         </View>
-
-        <Animated.View 
-          style={[
-            styles.tipContent,
-            { 
-              opacity: contentOpacity,
-              display: isTipVisible ? 'flex' : 'none'
-            }
-          ]}
-        >
-          <View style={styles.tipGridContainer}>
-            <View style={styles.tipGrid}>
-              {TIP_AMOUNTS.map((amount) => (
-                <TouchableOpacity
-                  key={amount}
-                  style={[
-                    styles.tipButton,
-                    amount === selectedTipAmount && styles.selectedTip,
-                    {
-                      backgroundColor:
-                        amount === selectedTipAmount
-                          ? (isNegativeTip ? theme.colors.neon.green : theme.colors.neon.pink)
-                          : theme.colors.background.secondary,
-                    },
-                  ]}
-                  onPress={() => setSelectedTipAmount(amount)}
-                >
-                  <Text
-                    style={[
-                      styles.tipText,
-                      {
-                        color: theme.colors.text.primary,
-                      },
-                    ]}
-                  >
-                    {isNegativeTip ? '-' : ''}${amount}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-          
-          <View style={styles.sendContainer}>
-            <TouchableOpacity
-              style={[
-                styles.sendButton, 
-                { backgroundColor: isNegativeTip ? theme.colors.neon.green : theme.colors.neon.pink }
-              ]}
-              onPress={handleSendTip}
-            >
-              <Text style={[styles.sendText, { color: theme.colors.text.primary }]}>
-                {isNegativeTip ? 'Send Penalty' : 'Send'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
       </View>
 
       {/* Stats row - bottom */}
-      <View style={[styles.statsContainer, theme.glass.default]}>
+      <View 
+        style={[
+          styles.statsContainer,
+          { backgroundColor: theme.colors.background.glass }
+        ]}
+      >
         <View style={styles.statsGroup}>
           <Icon 
             name="heart" 
             size={16} 
-            color={isDisliked ? theme.colors.neon.green : isLiked ? theme.colors.neon.pink : theme.colors.text.primary} 
+            color={isLiked ? theme.colors.neon.pink : theme.colors.text.primary} 
           />
           <Text style={[styles.statsText, { color: theme.colors.text.primary }]}>
-            {formatNumber(stats.likes + stats.superLikes - (stats.dislikes || 0))}
+            {formatNumber(metadata.stats?.likes ?? 0)}
           </Text>
         </View>
 
@@ -258,7 +113,7 @@ export function VideoOverlay({
             color={theme.colors.text.primary} 
           />
           <Text style={[styles.statsText, { color: theme.colors.text.primary }]}>
-            {formatCurrency(stats.tips)}
+            ${metadata.stats?.tips ?? 0}
           </Text>
         </View>
 
@@ -269,13 +124,13 @@ export function VideoOverlay({
             color={theme.colors.text.primary} 
           />
           <Text style={[styles.statsText, { color: theme.colors.text.primary }]}>
-            {formatNumber(stats.views)}
+            {formatNumber(metadata.stats?.views ?? 0)}
           </Text>
         </View>
       </View>
     </>
   );
-}
+});
 
 const styles = StyleSheet.create({
   actionsContainer: {
@@ -287,11 +142,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     width: 52,
     overflow: 'hidden',
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-  },
-  actionsContainerExpanded: {
-    width: 160,
-    paddingRight: 12,
   },
   actionButtons: {
     width: 52,
@@ -304,55 +154,6 @@ const styles = StyleSheet.create({
     height: 28,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  tipContent: {
-    flex: 1,
-    flexDirection: 'column',
-  },
-  tipGridContainer: {
-    flex: 2,
-  },
-  tipGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    alignContent: 'space-between',
-    justifyContent: 'space-between',
-  },
-  tipButton: {
-    width: 40,
-    height: 28,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  selectedTip: {
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  tipText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  sendContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  sendButton: {
-    height: 28,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sendText: {
-    fontSize: 14,
-    fontWeight: '600',
   },
   statsContainer: {
     position: 'absolute',

@@ -2,98 +2,10 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if user is authenticated
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    // Helper function to check if user owns the document
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    // Videos collection
-    match /videos/{videoId} {
-      allow read: if isAuthenticated();  // Allow any authenticated user to read
-      allow create: if isAuthenticated() && isOwner(request.resource.data.creatorId);
-      allow update: if isAuthenticated() && (
-        // Allow owner to update everything
-        isOwner(resource.data.creatorId) ||
-        // Allow any authenticated user to update stats
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stats']) &&
-        // Ensure only allowed stats are being updated
-        request.resource.data.stats.diff(resource.data.stats).affectedKeys().hasAny(['views', 'likes', 'superLikes', 'dislikes', 'superDislikes', 'tips', 'comments']) &&
-        // Ensure the increment is by 1 or -1 for likes/views/comments/dislikes, but allow any amount for tips
-        (
-          (request.resource.data.stats.views == resource.data.stats.views + 1) ||
-          (request.resource.data.stats.likes == resource.data.stats.likes + 1) ||
-          (request.resource.data.stats.likes == resource.data.stats.likes - 1) ||
-          (request.resource.data.stats.superLikes == resource.data.stats.superLikes + 1) ||
-          (request.resource.data.stats.superLikes == resource.data.stats.superLikes - 1) ||
-          (('dislikes' in resource.data.stats ? resource.data.stats.dislikes : 0) + 1 == request.resource.data.stats.dislikes) ||
-          (('dislikes' in resource.data.stats ? resource.data.stats.dislikes : 0) - 1 == request.resource.data.stats.dislikes) ||
-          (('superDislikes' in resource.data.stats ? resource.data.stats.superDislikes : 0) + 1 == request.resource.data.stats.superDislikes) ||
-          (('superDislikes' in resource.data.stats ? resource.data.stats.superDislikes : 0) - 1 == request.resource.data.stats.superDislikes) ||
-          (request.resource.data.stats.tips != resource.data.stats.tips) || // Allow any tip amount change (positive or negative)
-          (request.resource.data.stats.comments == resource.data.stats.comments + 1)
-        ))
-      );
-      allow delete: if isAuthenticated() && isOwner(resource.data.creatorId);
-    }
-
-    // Comments collection
-    match /comments/{commentId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
-    }
-
-    // Likes collection
-    match /likes/{likeId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && likeId == request.resource.data.videoId + '_' + request.auth.uid;
-      allow delete: if isAuthenticated() && likeId == resource.data.videoId + '_' + request.auth.uid;
-    }
-
-    // Dislikes collection
-    match /dislikes/{dislikeId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && dislikeId == request.resource.data.videoId + '_' + request.auth.uid;
-      allow delete: if isAuthenticated() && dislikeId == resource.data.videoId + '_' + request.auth.uid;
-    }
-
-    // Tips collection
-    match /tips/{tipId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isOwner(request.resource.data.fromUserId);
-    }
-
-    // Swipes collection
-    match /swipes/{swipeId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-    }
-
-    // Users collection
-    match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && isOwner(userId);
-      
-      // User's private data subcollection
-      match /private/{document=**} {
-        allow read, write: if isOwner(userId);
-      }
-    }
-
-    // Public profiles collection
-    match /profiles/{profileId} {
-      allow read: if true;
-      allow write: if isOwner(profileId);
-    }
-
-    // Default deny all
+    // WARNING: These rules are for demonstration purposes only.
+    // DO NOT use in production as they allow anyone to read, write, update, and delete all data.
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
   }
 } 

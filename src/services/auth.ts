@@ -1,8 +1,10 @@
-import { auth, firebase } from './firebase';
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { createLogger } from '../utils/logger';
 import { Platform } from 'react-native';
 import { ANDROID_CLIENT_ID } from '@env';
+
+const logger = createLogger('AuthService');
 
 // Initialize Google Sign-In
 GoogleSignin.configure({
@@ -20,13 +22,13 @@ export interface AuthResponse {
 }
 
 export const signUp = async (email: string, password: string): Promise<AuthResponse> => {
-  console.log('Starting sign up process...');
+  logger.info('Starting sign up process');
   try {
     const userCredential = await auth().createUserWithEmailAndPassword(email, password);
-    console.log('Sign up successful:', userCredential.user.uid);
+    logger.info('Sign up successful', { userId: userCredential.user.uid });
     return { user: userCredential.user, error: null };
   } catch (error: any) {
-    console.error('Sign up error:', error);
+    logger.error('Sign up error', { error });
     return {
       user: null,
       error: {
@@ -38,13 +40,13 @@ export const signUp = async (email: string, password: string): Promise<AuthRespo
 };
 
 export const signIn = async (email: string, password: string): Promise<AuthResponse> => {
-  console.log('Starting sign in process...');
+  logger.info('Starting sign in process');
   try {
     const userCredential = await auth().signInWithEmailAndPassword(email, password);
-    console.log('Sign in successful:', userCredential.user.uid);
+    logger.info('Sign in successful', { userId: userCredential.user.uid });
     return { user: userCredential.user, error: null };
   } catch (error: any) {
-    console.error('Sign in error:', error);
+    logger.error('Sign in error', { error });
     return {
       user: null,
       error: {
@@ -69,7 +71,7 @@ export const signInWithGoogle = async (): Promise<AuthResponse> => {
     const userCredential = await auth().signInWithCredential(googleCredential);
     return { user: userCredential.user, error: null };
   } catch (error: any) {
-    console.error('Google sign in error:', error);
+    logger.error('Google sign in error', { error });
     return {
       user: null,
       error: {
@@ -80,16 +82,17 @@ export const signInWithGoogle = async (): Promise<AuthResponse> => {
   }
 };
 
-export const signOut = async (): Promise<{ error: AuthError | null }> => {
-  console.log('Starting sign out process...');
+export const signOut = async (): Promise<AuthResponse> => {
+  logger.info('Starting sign out process');
   try {
     await auth().signOut();
     await GoogleSignin.signOut(); // Also sign out from Google
-    console.log('Sign out successful');
-    return { error: null };
+    logger.info('Sign out successful');
+    return { user: null, error: null };
   } catch (error: any) {
-    console.error('Sign out error:', error);
+    logger.error('Sign out error', { error });
     return {
+      user: null,
       error: {
         code: error.code || 'unknown',
         message: error.message || 'An unexpected error occurred',
@@ -98,10 +101,10 @@ export const signOut = async (): Promise<{ error: AuthError | null }> => {
   }
 };
 
-export const subscribeToAuthChanges = (callback: (user: FirebaseAuthTypes.User | null) => void) => {
-  console.log('Setting up auth state listener...');
+export const onAuthStateChanged = (callback: (user: FirebaseAuthTypes.User | null) => void) => {
+  logger.info('Setting up auth state listener');
   return auth().onAuthStateChanged((user) => {
-    console.log('Auth state changed:', user ? `User: ${user.uid}` : 'No user');
+    logger.info('Auth state changed', { userId: user?.uid });
     callback(user);
   });
 }; 

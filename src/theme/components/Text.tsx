@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text as RNText, TextProps as RNTextProps } from 'react-native';
 import { styled } from 'nativewind';
-import theme from '../theme';
+import { useTheme } from '../ThemeProvider';
 
 const StyledText = styled(RNText);
 
@@ -25,6 +25,7 @@ export const Text: React.FC<TextProps> = ({
   children,
   ...props
 }) => {
+  const theme = useTheme();
   const variantClass = variantClasses[variant];
 
   return (

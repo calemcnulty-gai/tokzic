@@ -7,6 +7,7 @@ export const colors = {
     primary: '#0A0A0F',
     secondary: '#12121A',
     glass: 'rgba(18, 18, 26, 0.75)', // 75% opacity for backgrounds
+    overlay: 'rgba(10, 10, 15, 0.5)',
   },
   
   // Neon accent colors with 90% opacity
@@ -23,15 +24,12 @@ export const colors = {
     secondary: 'rgba(255, 255, 255, 0.7)',
     muted: 'rgba(255, 255, 255, 0.5)',
     accent: 'rgba(255, 0, 229, 0.9)', // 90% opacity for accent text
+    inverse: '#000000',
   },
   
   // Border colors
-  border: {
-    default: 'rgba(255, 255, 255, 0.1)',
-    focus: 'rgba(255, 0, 229, 0.9)', // 90% opacity for focus borders
-    hover: 'rgba(255, 0, 229, 0.3)',
-  },
-
+  border: 'rgba(255, 255, 255, 0.1)',
+  
   // Status colors with 90% opacity
   status: {
     success: 'rgba(0, 255, 157, 0.9)',
@@ -39,6 +37,11 @@ export const colors = {
     warning: 'rgba(255, 170, 0, 0.9)',
     info: 'rgba(0, 229, 255, 0.9)',
   },
+
+  // UI State colors
+  primary: 'rgba(255, 0, 229, 0.9)',
+  secondary: 'rgba(157, 0, 255, 0.9)',
+  disabled: 'rgba(255, 255, 255, 0.3)',
 };
 
 export const spacing = {
@@ -107,13 +110,13 @@ export const glass = {
   default: {
     backgroundColor: colors.background.glass,
     backdropFilter: 'blur(8px)',
-    borderColor: colors.border.default,
+    borderColor: colors.border,
     borderWidth: 1,
   },
   heavy: {
     backgroundColor: 'rgba(18, 18, 26, 0.9)',
     backdropFilter: 'blur(16px)',
-    borderColor: colors.border.default,
+    borderColor: colors.border,
     borderWidth: 1,
   },
 };
@@ -134,7 +137,7 @@ export const zIndex = {
   tooltip: 300,
 };
 
-const theme = {
+export const theme = {
   colors,
   spacing,
   borderRadius,
@@ -143,7 +146,6 @@ const theme = {
   glass,
   animation,
   zIndex,
-};
+} as const;
 
 export type Theme = typeof theme;
-export default theme;

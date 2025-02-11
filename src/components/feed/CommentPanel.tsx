@@ -1,300 +1,244 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  Animated,
-  StyleSheet,
-  Dimensions,
-  TouchableWithoutFeedback,
+  FlatList,
   KeyboardAvoidingView,
   Platform,
-  FlatList,
+  ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
-import { Portal } from '@gorhom/portal';
-import { useTheme } from '../../theme/ThemeProvider';
 import { Comment } from '../../types/firestore';
-import { format } from 'date-fns';
+import { createLogger } from '../../utils/logger';
+import { useTheme } from '../../theme/ThemeProvider';
+import { formatTimeAgo } from '../../utils/format';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import {
+  toggleComments,
+  selectCommentsVisibility,
+  selectIsLoadingComments,
+  selectIsSubmittingComment
+} from '../../store/slices/uiSlice';
+import {
+  handleCommentSubmission,
+  selectVideoComments
+} from '../../store/slices/videoSlice';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const PANEL_HEIGHT = SCREEN_HEIGHT * 0.7; // 70% of screen height
+const logger = createLogger('CommentPanel');
 
-interface CommentPanelProps {
-  isVisible: boolean;
-  onClose: () => void;
-  onSubmitComment: (text: string) => Promise<void>;
-  comments: Comment[];
-  isLoading?: boolean;
-}
-
-interface CommentCardProps {
-  comment: Comment;
-}
-
-function CommentCard({ comment }: CommentCardProps) {
+const CommentItem = memo(({ comment }: { comment: Comment }) => {
   const theme = useTheme();
   
   return (
-    <View style={[styles.commentCard, { backgroundColor: theme.colors.background.secondary }]}>
-      <View style={styles.commentHeader}>
-        <Text style={[styles.username, { color: theme.colors.text.primary }]}>
-          {comment.user.username}
-        </Text>
-        <Text style={[styles.timestamp, { color: theme.colors.text.secondary }]}>
-          {format(comment.createdAt, 'MMM d, h:mm a')}
-        </Text>
-      </View>
-      <Text style={[styles.commentText, { color: theme.colors.text.primary }]}>
+    <View style={[styles.commentItem, { borderBottomColor: theme.colors.border }]}>
+      <Text style={[styles.commentUsername, { color: theme.colors.text.primary }]}>
+        {comment.username}
+      </Text>
+      <Text style={[styles.commentText, { color: theme.colors.text.secondary }]}>
         {comment.text}
+      </Text>
+      <Text style={[styles.commentTime, { color: theme.colors.text.muted }]}>
+        {formatTimeAgo(comment.timestamp)}
       </Text>
     </View>
   );
+});
+
+interface CommentPanelProps {
+  videoId: string;
 }
 
-export function CommentPanel({
-  isVisible,
-  onClose,
-  onSubmitComment,
-  comments,
-  isLoading = false,
-}: CommentPanelProps) {
+export const CommentPanel = memo(function CommentPanel({ videoId }: CommentPanelProps) {
   const theme = useTheme();
-  const [comment, setComment] = useState('');
-  const slideAnim = useRef(new Animated.Value(PANEL_HEIGHT)).current;
-  const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const dispatch = useAppDispatch();
+  const [commentText, setCommentText] = useState('');
 
-  useEffect(() => {
-    if (isVisible) {
-      Animated.parallel([
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          useNativeDriver: true,
-          tension: 65,
-          friction: 11,
-        }),
-        Animated.timing(backdropOpacity, {
-          toValue: 0.5,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.spring(slideAnim, {
-          toValue: PANEL_HEIGHT,
-          useNativeDriver: true,
-          tension: 65,
-          friction: 11,
-        }),
-        Animated.timing(backdropOpacity, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
+  // Get all state from Redux
+  const isCommentsVisible = useAppSelector(selectCommentsVisibility);
+  const isLoadingComments = useAppSelector(selectIsLoadingComments);
+  const isSubmittingComment = useAppSelector(selectIsSubmittingComment);
+  const comments = useAppSelector(state => selectVideoComments(state, videoId));
+
+  const handleSubmit = useCallback(async () => {
+    if (!commentText.trim()) {
+      logger.warn('Attempted to submit empty comment');
+      return;
     }
-  }, [isVisible]);
 
-  const handleSubmit = async () => {
-    if (!comment.trim()) return;
-    
     try {
-      await onSubmitComment(comment.trim());
-      setComment('');
+      await dispatch(handleCommentSubmission({ text: commentText.trim() })).unwrap();
+      setCommentText('');
     } catch (error) {
-      console.error('Error submitting comment:', error);
+      logger.error('Error submitting comment', { error });
     }
-  };
+  }, [commentText, dispatch]);
 
-  if (!isVisible) return null;
+  const handleChangeText = useCallback((text: string) => {
+    setCommentText(text);
+  }, []);
+
+  const renderComment = useCallback(({ item }: { item: Comment }) => (
+    <CommentItem comment={item} />
+  ), []);
+
+  const keyExtractor = useCallback((item: Comment) => item.id, []);
+
+  if (!isCommentsVisible) return null;
 
   return (
-    <Portal>
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.container}>
-          <Animated.View
-            style={[
-              styles.backdrop,
-              {
-                opacity: backdropOpacity,
-                backgroundColor: theme.colors.background.overlay,
-              },
-            ]}
-          />
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.keyboardAvoidingView}
-          >
-            <TouchableWithoutFeedback>
-              <Animated.View
-                style={[
-                  styles.panel,
-                  {
-                    backgroundColor: theme.colors.background.primary,
-                    transform: [{ translateY: slideAnim }],
-                  },
-                ]}
-              >
-                <View style={styles.header}>
-                  <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-                    Comments
-                  </Text>
-                </View>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={[styles.container, { backgroundColor: theme.colors.background.secondary }]}
+    >
+      <View style={[styles.header, { borderBottomColor: theme.colors.border }]}>
+        <Text style={[styles.title, { color: theme.colors.text.primary }]}>Comments</Text>
+        <TouchableOpacity 
+          onPress={() => dispatch(toggleComments())} 
+          style={styles.closeButton}
+        >
+          <Text style={[styles.closeButtonText, { color: theme.colors.text.primary }]}>✕</Text>
+        </TouchableOpacity>
+      </View>
 
-                <View style={styles.commentsContainer}>
-                  <FlatList
-                    data={[...comments].sort((a, b) => b.createdAt - a.createdAt)}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => <CommentCard comment={item} />}
-                    contentContainerStyle={styles.commentsList}
-                    ListEmptyComponent={
-                      <View style={styles.emptyContainer}>
-                        <Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>
-                          No comments yet
-                        </Text>
-                      </View>
-                    }
-                  />
-                </View>
-
-                <View style={[styles.inputContainer, { backgroundColor: theme.colors.background.secondary }]}>
-                  <TextInput
-                    style={[styles.input, { color: theme.colors.text.primary }]}
-                    placeholder="Write a comment..."
-                    placeholderTextColor={theme.colors.text.secondary}
-                    value={comment}
-                    onChangeText={setComment}
-                    onSubmitEditing={handleSubmit}
-                    multiline
-                    maxLength={500}
-                  />
-                  <TouchableOpacity
-                    style={[
-                      styles.sendButton,
-                      { backgroundColor: theme.colors.neon.green },
-                    ]}
-                    onPress={handleSubmit}
-                  >
-                    <Text style={[styles.sendText, { color: theme.colors.text.inverse }]}>
-                      Send
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </Animated.View>
-            </TouchableWithoutFeedback>
-          </KeyboardAvoidingView>
+      {isLoadingComments ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
-      </TouchableWithoutFeedback>
-    </Portal>
+      ) : (
+        <FlatList
+          data={comments}
+          keyExtractor={keyExtractor}
+          renderItem={renderComment}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={[styles.emptyText, { color: theme.colors.text.secondary }]}>
+                No comments yet. Be the first to comment!
+              </Text>
+            </View>
+          }
+        />
+      )}
+
+      <View style={[styles.inputContainer, { borderTopColor: theme.colors.border }]}>
+        <TextInput
+          style={[
+            styles.input,
+            { 
+              backgroundColor: theme.colors.background.primary,
+              color: theme.colors.text.primary 
+            }
+          ]}
+          value={commentText}
+          onChangeText={handleChangeText}
+          placeholder="Add a comment..."
+          placeholderTextColor={theme.colors.text.muted}
+          multiline
+          maxLength={1000}
+          editable={!isSubmittingComment}
+        />
+        <TouchableOpacity
+          style={[
+            styles.submitButton,
+            {
+              backgroundColor: theme.colors.primary,
+              opacity: isSubmittingComment || !commentText.trim() ? 0.5 : 1
+            }
+          ]}
+          onPress={handleSubmit}
+          disabled={isSubmittingComment || !commentText.trim()}
+        >
+          {isSubmittingComment ? (
+            <ActivityIndicator size="small" color={theme.colors.text.primary} />
+          ) : (
+            <Text style={[styles.submitButtonText, { color: theme.colors.text.primary }]}>
+              Send
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
-    bottom: 0,
-    justifyContent: 'flex-end',
-  },
-  backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  panel: {
-    height: PANEL_HEIGHT,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    maxHeight: '80%',
   },
   header: {
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  commentsContainer: {
-    flex: 1,
-  },
-  commentsList: {
-    padding: 16,
-  },
-  commentCard: {
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  commentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    padding: 16,
+    borderBottomWidth: 1,
   },
-  username: {
-    fontSize: 14,
+  title: {
+    fontSize: 18,
     fontWeight: '600',
   },
-  timestamp: {
-    fontSize: 12,
+  closeButton: {
+    padding: 8,
+  },
+  closeButtonText: {
+    fontSize: 24,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  commentItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  commentUsername: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   commentText: {
     fontSize: 14,
-    lineHeight: 20,
+    marginBottom: 4,
+  },
+  commentTime: {
+    fontSize: 12,
+  },
+  emptyContainer: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
   },
   inputContainer: {
     flexDirection: 'row',
-    padding: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
-    alignItems: 'flex-end',
+    padding: 16,
+    borderTopWidth: 1,
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    minHeight: 40,
     maxHeight: 100,
-    paddingHorizontal: 12,
+    borderRadius: 20,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     marginRight: 8,
   },
-  sendButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+  submitButton: {
     borderRadius: 20,
+    paddingHorizontal: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  sendText: {
-    fontSize: 14,
+  submitButtonText: {
     fontWeight: '600',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 32,
-  },
-  emptyText: {
-    fontSize: 14,
   },
 }); 

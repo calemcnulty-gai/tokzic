@@ -1,5 +1,9 @@
 # Agent Configuration
 
+## Project
+- This is a React Native project built with Expo
+- It is a mobile app for the Tokzic platform
+
 ## Environment
 - Operating System: macOS Sequoia
 - Shell: zsh

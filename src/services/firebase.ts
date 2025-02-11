@@ -1,7 +1,10 @@
-import firebase from '../config/firebase';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
-import storage from '@react-native-firebase/storage';
+import { app, db } from '../config/firebase';
+import { getAuth } from '@react-native-firebase/auth';
+import { getStorage } from '@react-native-firebase/storage';
+
+// Initialize services
+const auth = getAuth(app);
+const storage = getStorage(app);
 
 // Export Firebase services
-export { firebase, auth, firestore, storage }; 
+export { app, auth, db as firestore, storage }; 
