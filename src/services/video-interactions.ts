@@ -1,27 +1,43 @@
-import { db } from '../config/firebase';
 import { Collections, VideoMetadata, Comment, Like, Tip } from '../types/firestore';
 import { createLogger } from '../utils/logger';
-import { query, where, orderBy, limit, FieldValue, Timestamp } from '@react-native-firebase/firestore';
-import firestore from '@react-native-firebase/firestore';
+import { serviceManager } from '../store/slices/firebase/services/ServiceManager';
+import { 
+  collection, 
+  query, 
+  where, 
+  orderBy, 
+  limit, 
+  Timestamp,
+  getDocs,
+  doc,
+  getDoc,
+  updateDoc,
+  setDoc,
+  deleteDoc,
+  increment
+} from 'firebase/firestore';
 
 const logger = createLogger('VideoInteractions');
 
 export class VideoInteractionService {
+  private getDb() {
+    return serviceManager.getFirestoreService().getFirestore();
+  }
+
   /**
    * Increments view count for a video
    */
   async incrementViewCount(videoId: string): Promise<void> {
     try {
-      const videoRef = db
-        .collection(Collections.VIDEOS)
-        .doc(videoId);
+      const db = this.getDb();
+      const videoRef = doc(db, Collections.VIDEOS, videoId);
 
       // First try to get the document
-      const doc = await videoRef.get();
+      const docSnap = await getDoc(videoRef);
 
-      if (!doc.exists) {
+      if (!docSnap.exists()) {
         logger.info('Creating default metadata for video', { videoId });
-        await videoRef.set({
+        await setDoc(videoRef, {
           id: videoId,
           title: "Untitled",
           description: "Sample video for testing",
@@ -44,8 +60,8 @@ export class VideoInteractionService {
       }
 
       logger.info('Incrementing view count', { videoId });
-      await videoRef.update({
-        'stats.views': firestore.FieldValue.increment(1)
+      await updateDoc(videoRef, {
+        'stats.views': increment(1)
       });
       logger.info('Successfully incremented view count');
     } catch (error) {
@@ -59,18 +75,17 @@ export class VideoInteractionService {
    */
   async toggleLike(videoId: string, userId: string): Promise<boolean> {
     try {
+      const db = this.getDb();
       logger.info('Toggling like', { videoId, userId });
-      const likeRef = db
-        .collection(Collections.LIKES)
-        .doc(`${videoId}_${userId}`);
+      const likeRef = doc(db, Collections.LIKES, `${videoId}_${userId}`);
 
-      const likeDoc = await likeRef.get();
-      const videoRef = db.collection(Collections.VIDEOS).doc(videoId);
+      const likeDoc = await getDoc(likeRef);
+      const videoRef = doc(db, Collections.VIDEOS, videoId);
 
-      if (likeDoc.exists) {
-        await likeRef.delete();
-        await videoRef.update({
-          'stats.likes': firestore.FieldValue.increment(-1)
+      if (likeDoc.exists()) {
+        await deleteDoc(likeRef);
+        await updateDoc(videoRef, {
+          'stats.likes': increment(-1)
         });
         logger.info('Successfully removed like');
         return false;
@@ -80,9 +95,9 @@ export class VideoInteractionService {
           userId,
           createdAt: Date.now(),
         };
-        await likeRef.set(like);
-        await videoRef.update({
-          'stats.likes': firestore.FieldValue.increment(1)
+        await setDoc(likeRef, like);
+        await updateDoc(videoRef, {
+          'stats.likes': increment(1)
         });
         logger.info('Successfully added like');
         return true;
@@ -98,18 +113,17 @@ export class VideoInteractionService {
    */
   async toggleDislike(videoId: string, userId: string): Promise<boolean> {
     try {
+      const db = this.getDb();
       logger.info('Toggling dislike', { videoId, userId });
-      const dislikeRef = db
-        .collection(Collections.DISLIKES)
-        .doc(`${videoId}_${userId}`);
+      const dislikeRef = doc(db, Collections.DISLIKES, `${videoId}_${userId}`);
 
-      const dislikeDoc = await dislikeRef.get();
-      const videoRef = db.collection(Collections.VIDEOS).doc(videoId);
+      const dislikeDoc = await getDoc(dislikeRef);
+      const videoRef = doc(db, Collections.VIDEOS, videoId);
 
-      if (dislikeDoc.exists) {
-        await dislikeRef.delete();
-        await videoRef.update({
-          'stats.dislikes': firestore.FieldValue.increment(-1)
+      if (dislikeDoc.exists()) {
+        await deleteDoc(dislikeRef);
+        await updateDoc(videoRef, {
+          'stats.dislikes': increment(-1)
         });
         logger.info('Successfully removed dislike');
         return false;
@@ -119,9 +133,9 @@ export class VideoInteractionService {
           userId,
           createdAt: Date.now(),
         };
-        await dislikeRef.set(dislike);
-        await videoRef.update({
-          'stats.dislikes': firestore.FieldValue.increment(1)
+        await setDoc(dislikeRef, dislike);
+        await updateDoc(videoRef, {
+          'stats.dislikes': increment(1)
         });
         logger.info('Successfully added dislike');
         return true;
@@ -135,27 +149,28 @@ export class VideoInteractionService {
   /**
    * Fetches comments for a video
    */
-  async fetchComments(videoId: string, limit = 50, startAfter?: number): Promise<Comment[]> {
+  async fetchComments(videoId: string, commentLimit = 50, startAfter?: number): Promise<Comment[]> {
     try {
-      logger.info('Fetching comments', { videoId, limit, startAfter });
-      let query = db
-        .collection(Collections.COMMENTS)
-        .where('videoId', '==', videoId)
-        .orderBy('createdAt', 'desc')
-        .limit(limit);
+      const db = this.getDb();
+      logger.info('Fetching comments', { videoId, limit: commentLimit, startAfter });
+      const commentsRef = collection(db, Collections.COMMENTS);
+      
+      let commentsQuery = query(
+        commentsRef,
+        where('videoId', '==', videoId),
+        orderBy('timestamp', 'desc'),
+        limit(commentLimit)
+      );
 
       if (startAfter) {
-        query = query.startAfter(startAfter);
+        commentsQuery = query(
+          commentsQuery,
+          where('timestamp', '<', startAfter)
+        );
       }
 
-      const snapshot = await query.get();
-      const comments = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Comment[];
-
-      logger.info('Successfully fetched comments', { count: comments.length });
-      return comments;
+      const snapshot = await getDocs(commentsQuery);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Comment));
     } catch (error) {
       logger.error('Error fetching comments', { videoId, error });
       throw error;
@@ -172,29 +187,24 @@ export class VideoInteractionService {
     userInfo: { username: string; avatarUrl?: string }
   ): Promise<void> {
     try {
+      const db = this.getDb();
       logger.info('Adding comment', { videoId, userId });
+      const commentsRef = collection(db, Collections.COMMENTS);
+      const videoRef = doc(db, Collections.VIDEOS, videoId);
+
       const comment = {
         videoId,
         userId,
         text,
-        user: {
-          username: userInfo.username,
-          ...(userInfo.avatarUrl && { avatarUrl: userInfo.avatarUrl })
-        },
-        createdAt: Date.now(),
+        username: userInfo.username,
+        avatarUrl: userInfo.avatarUrl,
+        timestamp: Date.now()
       };
 
-      await db
-        .collection(Collections.COMMENTS)
-        .add(comment);
-
-      await db
-        .collection(Collections.VIDEOS)
-        .doc(videoId)
-        .update({
-          'stats.comments': firestore.FieldValue.increment(1)
-        });
-
+      await setDoc(doc(commentsRef), comment);
+      await updateDoc(videoRef, {
+        'stats.comments': increment(1)
+      });
       logger.info('Successfully added comment');
     } catch (error) {
       logger.error('Error adding comment', { videoId, userId, error });

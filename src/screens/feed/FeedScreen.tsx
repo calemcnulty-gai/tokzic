@@ -5,23 +5,27 @@ import { useAuth } from '../../hooks/useAuth';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useAppSelector } from '../../store/hooks';
+import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { createLogger } from '../../utils/logger';
 import { initializeVideoBuffer } from '../../store/slices/videoSlice';
-import { VideoWithMetadata } from '../../services/video';
-import { useDispatch } from 'react-redux';
-import { AnyAction, ThunkDispatch } from '@reduxjs/toolkit';
-import { RootState } from '../../store';
+import { VideoWithMetadata } from '../../types/video';
 
 const logger = createLogger('FeedScreen');
 
 type FeedScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export function FeedScreen() {
-  const { loading: authLoading, isInitialized: authInitialized, user } = useAuth();
+  const { isLoading: authLoading, isInitialized: authInitialized, user } = useAuth();
   const navigation = useNavigation<FeedScreenNavigationProp>();
-  const dispatch = useDispatch<ThunkDispatch<RootState, unknown, AnyAction>>();
-  const { videos, currentIndex, isLoading, error, isInitialized: videoInitialized } = useAppSelector(state => state.video);
+  const dispatch = useAppDispatch();
+  const { 
+    videos, 
+    currentIndex, 
+    isLoading, 
+    error, 
+    isInitialized: videoInitialized,
+    loadingStates 
+  } = useAppSelector((state) => state.video);
 
   useEffect(() => {
     async function initializeFeed() {
@@ -34,8 +38,8 @@ export function FeedScreen() {
         return;
       }
 
-      // Prevent duplicate calls by checking if we're already loading
-      if (!videoInitialized && !isLoading) {
+      // Prevent duplicate calls by checking if we're already loading or if there's an error
+      if (!videoInitialized && !isLoading && !error) {
         logger.info('Initializing video feed', { userId: user.uid });
         try {
           const result = await dispatch(initializeVideoBuffer()).unwrap();
@@ -62,14 +66,6 @@ export function FeedScreen() {
             }
           });
         }
-      } else {
-        logger.info('Video feed already initialized or currently loading', { 
-          videoCount: videos.length,
-          currentIndex,
-          isLoading,
-          videoInitialized,
-          hasError: !!error
-        });
       }
     }
 
@@ -128,9 +124,7 @@ export function FeedScreen() {
   return (
     <View style={styles.container}>
       <SwipeableVideoPlayer
-        currentVideo={videos[currentIndex].video}
-        metadata={videos[currentIndex].metadata}
-        isLoading={isLoading}
+        currentVideo={videos[currentIndex]}
       />
     </View>
   );

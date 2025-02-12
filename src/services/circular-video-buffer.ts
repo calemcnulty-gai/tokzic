@@ -1,4 +1,4 @@
-import type { VideoData } from './video';
+import type { VideoData, VideoWithMetadata } from '../types/video';
 import { videoService } from './video';
 import { VideoMetadata } from '../types/firestore';
 import { videoCacheManager } from './video-cache';
@@ -6,11 +6,6 @@ import { operationQueue } from './operation-queue';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('CircularVideoBuffer');
-
-export interface VideoWithMetadata {
-  video: VideoData;
-  metadata: VideoMetadata;
-}
 
 const BUFFER_SIZE = 5;
 const MIDDLE_INDEX = Math.floor(BUFFER_SIZE / 2);

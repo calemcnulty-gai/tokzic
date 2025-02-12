@@ -1,8 +1,6 @@
 import { useEffect, useCallback } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useNavigation, useNavigationState } from '@react-navigation/native';
+import { useNavigation, useNavigationState, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import analytics from '@react-native-firebase/analytics';
 import {
   navigateTo,
   navigationComplete,
@@ -11,16 +9,18 @@ import {
   goBack,
   type RouteType,
 } from '../store/slices/navigationSlice';
-import type { RootState, AppDispatch } from '../store';
+import type { RootState, AppDispatch } from '../store/types';
 import { RootStackParamList } from '../navigation/types';
 import { createLogger } from '../utils/logger';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
 
 const logger = createLogger('useAppNavigation');
 
 export function useAppNavigation() {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useAppDispatch();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const navigationState = useNavigationState(state => state);
+  const route = useRoute();
   
   const {
     currentRoute,
@@ -28,9 +28,9 @@ export function useAppNavigation() {
     deepLinkPending,
     isNavigating,
     authRequiredRoutes,
-  } = useSelector((state: RootState) => state.navigation);
+  } = useAppSelector((state) => state.navigation);
   
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
 
   // Handle deep linking
   useEffect(() => {
@@ -61,14 +61,11 @@ export function useAppNavigation() {
     if (isNavigating) {
       const navigate = async () => {
         try {
-          // Log navigation event to analytics
-          await analytics().logEvent('screen_view', {
-            screen_name: currentRoute,
-            previous_screen: previousRoute,
-          });
 
           // Perform the navigation
-          navigation.navigate(currentRoute);
+          navigation.navigate(
+            currentRoute === 'auth' ? 'AuthStack' : 'MainStack'
+          );
           dispatch(navigationComplete());
         } catch (error) {
           logger.error('Navigation failed', { 
@@ -78,7 +75,7 @@ export function useAppNavigation() {
         }
       };
 
-      navigate();
+      void navigate();
     }
   }, [isNavigating, currentRoute, previousRoute, navigation, dispatch]);
 

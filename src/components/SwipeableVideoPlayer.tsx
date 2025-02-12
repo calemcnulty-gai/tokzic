@@ -1,5 +1,5 @@
-import React from 'react';
-import { Dimensions, StyleSheet } from 'react-native';
+import React, { useCallback } from 'react';
+import { Dimensions, StyleSheet, View, ActivityIndicator } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -13,19 +13,11 @@ import { VideoOverlay } from './feed/VideoOverlay';
 import { CommentPanel } from './feed/CommentPanel';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { createLogger } from '../utils/logger';
-import { workletLogger, safeSerializeError } from '../utils/workletLogger';
-import { VideoData } from '../services/video';
-import { VideoMetadata } from '../types/firestore';
-import { 
-  handleSwipeGesture,
-  handleCommentSubmission,
-  selectCurrentVideo,
-  selectVideoComments,
-  selectIsLoadingComments,
-  selectCommentsVisibility,
-  selectSwipeState
-} from '../store/slices/videoSlice';
-import { createAction } from '@reduxjs/toolkit';
+import { createAction, createSelector } from '@reduxjs/toolkit';
+import type { RootState, VideoState } from '../store/types';
+import type { VideoWithMetadata } from '../types/video';
+import { ErrorBoundary } from './ErrorBoundary';
+import { handleSwipeGesture } from '../store/slices/videoSlice';
 
 const logger = createLogger('SwipeableVideoPlayer');
 const { width, height } = Dimensions.get('window');
@@ -36,28 +28,101 @@ const DIRECTION_LOCK_THRESHOLD = 10;
 export type SwipeDirection = 'up' | 'down' | 'left' | 'right';
 
 interface SwipeableVideoPlayerProps {
-  currentVideo: VideoData;
-  metadata: VideoMetadata;
-  isLoading: boolean;
+  currentVideo: VideoWithMetadata;
 }
 
 const triggerSwipe = createAction<{ direction: SwipeDirection }>('video/triggerSwipe');
 
-export function SwipeableVideoPlayer({ currentVideo, metadata, isLoading }: SwipeableVideoPlayerProps) {
+// Create a memoized selector for video data readiness
+const selectVideoReadiness = createSelector(
+  [(state: RootState) => state.video],
+  (videoState) => ({
+    isReady: videoState.isVideosLoaded && videoState.isMetadataLoaded && videoState.currentVideo !== null,
+    isLoading: videoState.isLoading,
+    error: videoState.error
+  })
+);
+
+export function SwipeableVideoPlayer({ currentVideo }: SwipeableVideoPlayerProps) {
   const dispatch = useAppDispatch();
+  const isMounted = React.useRef(true);
+  const isGestureInProgress = React.useRef(false);
   
-  // Shared values for gesture handling - these are animation-specific and don't belong in Redux
+  React.useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+  
+  // Shared values for gesture handling
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const opacity = useSharedValue(1);
   const isVerticalGesture = useSharedValue<boolean | null>(null);
 
-  // Get all state from Redux
-  const feedVideo = useAppSelector(selectCurrentVideo);
-  const isCommentsVisible = useAppSelector(selectCommentsVisibility);
-  const comments = useAppSelector(state => selectVideoComments(state, metadata.id));
-  const isLoadingComments = useAppSelector(selectIsLoadingComments);
-  const { isSwipeInProgress, lastSwipeTime } = useAppSelector(selectSwipeState);
+  // Get loading state from Redux with proper typing
+  const { isReady, isLoading, error } = useAppSelector((state: RootState) => selectVideoReadiness(state));
+  const loadingStates = useAppSelector((state: RootState) => state.video.loadingStates);
+
+  const dispatchIfMounted = useCallback((action: any) => {
+    if (isMounted.current && !isGestureInProgress.current) {
+      dispatch(action);
+    }
+  }, [dispatch]);
+
+  const handleGestureEnd = useCallback((direction: SwipeDirection) => {
+    if (!isMounted.current || isGestureInProgress.current) {
+      logger.debug('Gesture end ignored', {
+        isMounted: isMounted.current,
+        isGestureInProgress: isGestureInProgress.current,
+        direction
+      });
+      return;
+    }
+    
+    logger.debug('Handling gesture end', { direction });
+    isGestureInProgress.current = true;
+    
+    // We'll let the animation complete before dispatching the action
+    setTimeout(() => {
+      if (isMounted.current) {
+        dispatch(handleSwipeGesture({ direction }))
+          .unwrap()
+          .then(() => {
+            logger.debug('Swipe gesture completed successfully', { direction });
+          })
+          .catch((error) => {
+            logger.error('Swipe gesture failed', { direction, error });
+          })
+          .finally(() => {
+            if (isMounted.current) {
+              isGestureInProgress.current = false;
+            }
+          });
+      }
+    }, 200); // Match the animation duration
+  }, [dispatch]);
+
+  // Handle loading and error states
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#ffffff" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return null;
+  }
+
+  if (!isReady || !currentVideo) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#ffffff" />
+      </View>
+    );
+  }
 
   const gesture = Gesture.Pan()
     .onStart(() => {
@@ -69,199 +134,112 @@ export function SwipeableVideoPlayer({ currentVideo, metadata, isLoading }: Swip
     })
     .onUpdate((event) => {
       'worklet';
-      try {
-        if (isVerticalGesture.value === null) {
-          const absX = Math.abs(event.translationX);
-          const absY = Math.abs(event.translationY);
-          
-          if (absX > DIRECTION_LOCK_THRESHOLD || absY > DIRECTION_LOCK_THRESHOLD) {
-            isVerticalGesture.value = absY > absX;
-          }
+      if (isVerticalGesture.value === null) {
+        const absX = Math.abs(event.translationX);
+        const absY = Math.abs(event.translationY);
+        
+        if (absX > DIRECTION_LOCK_THRESHOLD || absY > DIRECTION_LOCK_THRESHOLD) {
+          isVerticalGesture.value = absY > absX;
         }
+      }
 
-        if (isVerticalGesture.value === true) {
-          translateY.value = event.translationY;
-          try {
-            opacity.value = withTiming(Math.max(0.5, 1 - Math.abs(event.translationY) / VERTICAL_SWIPE_THRESHOLD * 0.5));
-          } catch (error) {
-            const safeErrorMessage = safeSerializeError(error);
-            runOnJS(workletLogger.error)('Error in vertical timing animation', {
-              errorMessage: safeErrorMessage,
-              translationY: event.translationY.toString()
-            });
-          }
-        } else if (isVerticalGesture.value === false) {
-          translateX.value = event.translationX;
-          try {
-            opacity.value = withTiming(Math.max(0.5, 1 - Math.abs(event.translationX) / SWIPE_THRESHOLD * 0.5));
-          } catch (error) {
-            const safeErrorMessage = safeSerializeError(error);
-            runOnJS(workletLogger.error)('Error in horizontal timing animation', {
-              errorMessage: safeErrorMessage,
-              translationX: event.translationX.toString()
-            });
-          }
-        }
-      } catch (error) {
-        const safeErrorMessage = safeSerializeError(error);
-        runOnJS(workletLogger.error)('Error in gesture onUpdate', {
-          errorMessage: safeErrorMessage,
-          translationX: event.translationX.toString(),
-          translationY: event.translationY.toString(),
-          isVerticalGesture: isVerticalGesture.value?.toString() ?? 'null'
-        });
+      if (isVerticalGesture.value === true) {
+        translateY.value = event.translationY;
+        opacity.value = withTiming(Math.max(0.5, 1 - Math.abs(event.translationY) / VERTICAL_SWIPE_THRESHOLD * 0.5));
+      } else if (isVerticalGesture.value === false) {
+        translateX.value = event.translationX;
+        opacity.value = withTiming(Math.max(0.5, 1 - Math.abs(event.translationX) / SWIPE_THRESHOLD * 0.5));
       }
     })
     .onEnd((event) => {
       'worklet';
-      try {
-        if (isVerticalGesture.value === true) {
-          if (Math.abs(translateY.value) > VERTICAL_SWIPE_THRESHOLD) {
-            const direction = translateY.value > 0 ? 'down' : 'up';
-            const dispatchSwipe = () => dispatch(triggerSwipe({ direction }));
-            runOnJS(dispatchSwipe)();
-            
-            try {
-              translateY.value = withSpring(
-                direction === 'down' ? height : -height,
-                {
-                  damping: 20,
-                  stiffness: 90,
-                }
-              );
-              translateX.value = withSpring(0);
-              opacity.value = withTiming(0, { duration: 200 });
-            } catch (error) {
-              const safeErrorMessage = safeSerializeError(error);
-              runOnJS(workletLogger.error)('Error in vertical swipe animation', {
-                errorMessage: safeErrorMessage,
-                direction,
-                translationY: translateY.value.toString()
-              });
+      
+      if (isVerticalGesture.value === true) {
+        if (Math.abs(translateY.value) > VERTICAL_SWIPE_THRESHOLD) {
+          const direction = translateY.value > 0 ? 'down' : 'up';
+          
+          translateY.value = withSpring(
+            direction === 'down' ? height : -height,
+            {
+              damping: 20,
+              stiffness: 90,
             }
-          } else {
-            try {
-              translateY.value = withSpring(0, {
-                damping: 20,
-                stiffness: 400,
-              });
-              opacity.value = withTiming(1, { duration: 200 });
-            } catch (error) {
-              const safeErrorMessage = safeSerializeError(error);
-              runOnJS(workletLogger.error)('Error in vertical reset animation', {
-                errorMessage: safeErrorMessage,
-                translationY: translateY.value.toString()
-              });
-            }
-          }
-        } else if (isVerticalGesture.value === false) {
-          if (Math.abs(translateX.value) > SWIPE_THRESHOLD) {
-            const direction = translateX.value > 0 ? 'right' : 'left';
-            const dispatchSwipe = () => dispatch(triggerSwipe({ direction }));
-            runOnJS(dispatchSwipe)();
-            
-            try {
-              translateX.value = withSpring(
-                direction === 'right' ? width : -width,
-                {
-                  damping: 20,
-                  stiffness: 90,
-                }
-              );
-              translateY.value = withSpring(0);
-              opacity.value = withTiming(0, { duration: 200 });
-            } catch (error) {
-              const safeErrorMessage = safeSerializeError(error);
-              runOnJS(workletLogger.error)('Error in horizontal swipe animation', {
-                errorMessage: safeErrorMessage,
-                direction,
-                translationX: translateX.value.toString()
-              });
-            }
-          } else {
-            try {
-              translateX.value = withSpring(0, {
-                damping: 20,
-                stiffness: 400,
-              });
-              opacity.value = withTiming(1, { duration: 200 });
-            } catch (error) {
-              const safeErrorMessage = safeSerializeError(error);
-              runOnJS(workletLogger.error)('Error in horizontal reset animation', {
-                errorMessage: safeErrorMessage,
-                translationX: translateX.value.toString()
-              });
-            }
-          }
+          );
+          translateX.value = withSpring(0);
+          opacity.value = withTiming(0, { duration: 200 });
+          
+          runOnJS(handleGestureEnd)(direction);
         } else {
-          try {
-            translateX.value = withSpring(0);
-            translateY.value = withSpring(0);
-            opacity.value = withTiming(1);
-          } catch (error) {
-            const safeErrorMessage = safeSerializeError(error);
-            runOnJS(workletLogger.error)('Error in neutral reset animation', {
-              errorMessage: safeErrorMessage
-            });
-          }
+          translateY.value = withSpring(0, {
+            damping: 20,
+            stiffness: 400,
+          });
+          opacity.value = withTiming(1, { duration: 200 });
         }
-      } catch (error) {
-        const safeErrorMessage = safeSerializeError(error);
-        runOnJS(workletLogger.error)('Error in gesture onEnd', {
-          errorMessage: safeErrorMessage,
-          translationX: event.translationX.toString(),
-          translationY: event.translationY.toString(),
-          isVerticalGesture: isVerticalGesture.value?.toString() ?? 'null'
-        });
+      } else if (isVerticalGesture.value === false) {
+        if (Math.abs(translateX.value) > SWIPE_THRESHOLD) {
+          const direction = translateX.value > 0 ? 'right' : 'left';
+          
+          translateX.value = withSpring(
+            direction === 'right' ? width : -width,
+            {
+              damping: 20,
+              stiffness: 90,
+            }
+          );
+          translateY.value = withSpring(0);
+          opacity.value = withTiming(0, { duration: 200 });
+          
+          runOnJS(handleGestureEnd)(direction);
+        } else {
+          translateX.value = withSpring(0, {
+            damping: 20,
+            stiffness: 400,
+          });
+          opacity.value = withTiming(1, { duration: 200 });
+        }
+      } else {
+        translateX.value = withSpring(0);
+        translateY.value = withSpring(0);
+        opacity.value = withTiming(1);
       }
     });
 
   const animatedStyle = useAnimatedStyle(() => {
     'worklet';
-    try {
-      return {
-        transform: [
-          { translateX: translateX.value },
-          { translateY: translateY.value }
-        ],
-        opacity: opacity.value,
-      };
-    } catch (error) {
-      const safeErrorMessage = safeSerializeError(error);
-      runOnJS(workletLogger.error)('Error in animatedStyle worklet', {
-        errorMessage: safeErrorMessage,
-        translateX: translateX.value?.toString() ?? 'undefined',
-        translateY: translateY.value?.toString() ?? 'undefined',
-        opacity: opacity.value?.toString() ?? 'undefined'
-      });
-      // Return a safe fallback style
-      return {
-        transform: [
-          { translateX: 0 },
-          { translateY: 0 }
-        ],
-        opacity: 1,
-      };
-    }
+    return {
+      transform: [
+        { translateX: translateX.value },
+        { translateY: translateY.value }
+      ],
+      opacity: opacity.value,
+    };
   });
 
-  if (!feedVideo) {
-    logger.debug('No current video available');
-    return null;
-  }
-
   return (
-    <GestureDetector gesture={gesture}>
-      <Animated.View style={[styles.container, animatedStyle]}>
-        <VideoPlayer
-          video={feedVideo.video}
-          metadata={feedVideo.metadata}
-          shouldPlay={!isLoading}
-        />
-        <VideoOverlay metadata={feedVideo.metadata} />
-        <CommentPanel videoId={metadata.id} />
-      </Animated.View>
-    </GestureDetector>
+    <ErrorBoundary>
+      <GestureDetector gesture={gesture}>
+        <Animated.View style={[styles.container, animatedStyle]}>
+          {currentVideo && currentVideo.video && currentVideo.metadata && (
+            <>
+              <ErrorBoundary>
+                <VideoPlayer
+                  video={currentVideo.video}
+                  metadata={currentVideo.metadata}
+                  shouldPlay={!isLoading && !loadingStates.video.isLoading}
+                />
+              </ErrorBoundary>
+              <ErrorBoundary>
+                <VideoOverlay metadata={currentVideo.metadata} />
+              </ErrorBoundary>
+              <ErrorBoundary>
+                <CommentPanel videoId={currentVideo.video.id} />
+              </ErrorBoundary>
+            </>
+          )}
+        </Animated.View>
+      </GestureDetector>
+    </ErrorBoundary>
   );
 }
 
@@ -270,5 +248,13 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
+  },
+  loadingContainer: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000000',
   },
 }); 

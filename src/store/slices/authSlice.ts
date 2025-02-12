@@ -1,34 +1,45 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { auth } from '../../config/firebase';
-import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import { createLogger } from '../../utils/logger';
-import { User, mapFirebaseUser } from '../../types/auth';
-import { AppDispatch, RootState } from '../';
-import { initializeVideoBuffer } from './videoSlice';
+import type { User } from '../../types/auth';
+import type { RootState } from '../';
+import { 
+  selectUser as selectFirebaseUser
+} from './firebase/selectors';
+import { 
+  initializeAuth as initializeFirebaseAuth,
+  signIn as firebaseSignIn,
+  signUp as firebaseSignUp,
+  signOut as firebaseSignOut,
+  signInWithGoogle as firebaseSignInWithGoogle
+} from './firebase/thunks/authThunks';
+import { setUser } from './firebase/firebaseSlice';
 
 const logger = createLogger('AuthSlice');
 
-// Store unsubscribe function at module level
-let authStateUnsubscribe: (() => void) | null = null;
+interface LoadingState {
+  isLoading: boolean;
+  isLoaded: boolean;
+  error: string | null;
+}
 
 interface AuthState {
-  user: User | null;
-  isLoading: boolean;
-  error: string | null;
+  isLoading: boolean;  // Currently loading
+  isLoaded: boolean;   // Successfully loaded
+  error: string | null; // Any error that occurred
   isInitialized: boolean;
 }
 
 const initialState: AuthState = {
-  user: null,
-  isLoading: true,
+  isLoading: false,
+  isLoaded: false,
   error: null,
   isInitialized: false,
 };
 
-// Initialize Firebase Auth listener
+// Initialize Auth
 export const initializeAuth = createAsyncThunk(
   'auth/initialize',
-  async (_, { getState, dispatch }) => {
+  async (_, { dispatch, getState }) => {
     const state = getState() as RootState;
     
     // Skip if already initialized or initializing
@@ -40,101 +51,39 @@ export const initializeAuth = createAsyncThunk(
       return;
     }
 
-    logger.info('Starting auth state initialization');
-    
-    try {
-      let isResolved = false;
-      await new Promise<void>((resolve) => {
-        const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-          try {
-            if (isResolved) return;
-
-            if (firebaseUser) {
-              logger.info('User authenticated in auth listener', { 
-                uid: firebaseUser.uid,
-                email: firebaseUser.email,
-                isEmailVerified: firebaseUser.emailVerified
-              });
-              dispatch(setUser(mapFirebaseUser(firebaseUser)));
-              logger.info('User state updated in Redux');
-            } else {
-              logger.info('No user found in auth listener');
-              dispatch(setUser(null));
-              logger.info('Null user state updated in Redux');
-            }
-
-            setTimeout(() => {
-              if (!isResolved) {
-                isResolved = true;
-                resolve();
-              }
-            }, 1000);
-          } catch (error) {
-            logger.error('Error in auth state listener', { error });
-            if (!isResolved) {
-              isResolved = true;
-              resolve();
-            }
-          }
-        });
-
-        // Store unsubscribe function in module-level variable
-        authStateUnsubscribe = unsubscribe;
-      });
-
-      return;
-    } catch (error) {
-      logger.error('Failed to initialize auth', { error });
-      throw error;
-    }
+    await dispatch(initializeFirebaseAuth()).unwrap();
   }
 );
 
-export const cleanupAuth = createAsyncThunk(
-  'auth/cleanup',
-  async () => {
-    if (authStateUnsubscribe) {
-      authStateUnsubscribe();
-      authStateUnsubscribe = null;
-    }
-  }
-);
-
+// Sign In
 export const signIn = createAsyncThunk(
   'auth/signIn',
-  async ({ email, password }: { email: string; password: string }) => {
-    try {
-      const result = await auth.signInWithEmailAndPassword(email, password);
-      return result.user;
-    } catch (error) {
-      logger.error('Sign in failed', { error });
-      throw error;
-    }
+  async (credentials: { email: string; password: string }, { dispatch }) => {
+    await dispatch(firebaseSignIn(credentials)).unwrap();
   }
 );
 
+// Sign Up
 export const signUp = createAsyncThunk(
   'auth/signUp',
-  async ({ email, password }: { email: string; password: string }) => {
-    try {
-      const result = await auth.createUserWithEmailAndPassword(email, password);
-      return result.user;
-    } catch (error) {
-      logger.error('Sign up failed', { error });
-      throw error;
-    }
+  async (credentials: { email: string; password: string }, { dispatch }) => {
+    await dispatch(firebaseSignUp(credentials)).unwrap();
   }
 );
 
+// Sign Out
 export const signOut = createAsyncThunk(
   'auth/signOut',
-  async () => {
-    try {
-      await auth.signOut();
-    } catch (error) {
-      logger.error('Sign out failed', { error });
-      throw error;
-    }
+  async (_, { dispatch }) => {
+    await dispatch(firebaseSignOut()).unwrap();
+  }
+);
+
+// Google Sign In
+export const signInWithGoogle = createAsyncThunk(
+  'auth/signInWithGoogle',
+  async (_, { dispatch }) => {
+    await dispatch(firebaseSignInWithGoogle()).unwrap();
   }
 );
 
@@ -142,10 +91,6 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setUser: (state, action) => {
-      state.user = action.payload;
-      state.isLoading = false;
-    },
     clearError: (state) => {
       state.error = null;
     },
@@ -155,14 +100,17 @@ const authSlice = createSlice({
       // Initialize Auth
       .addCase(initializeAuth.pending, (state) => {
         state.isLoading = true;
+        state.isLoaded = false;
         state.error = null;
       })
       .addCase(initializeAuth.fulfilled, (state) => {
         state.isInitialized = true;
         state.isLoading = false;
+        state.isLoaded = true;
       })
       .addCase(initializeAuth.rejected, (state, action) => {
         state.isLoading = false;
+        state.isLoaded = false;
         state.error = action.error.message || 'Failed to initialize auth';
       })
 
@@ -171,12 +119,13 @@ const authSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(signIn.fulfilled, (state, action) => {
+      .addCase(signIn.fulfilled, (state) => {
         state.isLoading = false;
-        state.user = mapFirebaseUser(action.payload);
+        state.isLoaded = true;
       })
       .addCase(signIn.rejected, (state, action) => {
         state.isLoading = false;
+        state.isLoaded = false;
         state.error = action.error.message || 'Sign in failed';
       })
 
@@ -185,12 +134,13 @@ const authSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(signUp.fulfilled, (state, action) => {
+      .addCase(signUp.fulfilled, (state) => {
         state.isLoading = false;
-        state.user = mapFirebaseUser(action.payload);
+        state.isLoaded = true;
       })
       .addCase(signUp.rejected, (state, action) => {
         state.isLoading = false;
+        state.isLoaded = false;
         state.error = action.error.message || 'Sign up failed';
       })
 
@@ -201,14 +151,43 @@ const authSlice = createSlice({
       })
       .addCase(signOut.fulfilled, (state) => {
         state.isLoading = false;
-        state.user = null;
+        state.isLoaded = true;
       })
       .addCase(signOut.rejected, (state, action) => {
         state.isLoading = false;
+        state.isLoaded = false;
         state.error = action.error.message || 'Sign out failed';
+      })
+
+      // Google Sign In
+      .addCase(signInWithGoogle.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(signInWithGoogle.fulfilled, (state) => {
+        state.isLoading = false;
+        state.isLoaded = true;
+      })
+      .addCase(signInWithGoogle.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isLoaded = false;
+        state.error = action.error.message || 'Google sign in failed';
       });
   },
 });
 
-export const { setUser, clearError } = authSlice.actions;
+export const { clearError } = authSlice.actions;
+
+// Selectors
+export const selectAuthState = createSelector(
+  [(state: RootState) => state.auth],
+  (auth) => ({
+    isLoading: auth.isLoading,
+    isLoaded: auth.isLoaded,
+    error: auth.error
+  })
+);
+export const selectIsAuthInitialized = (state: RootState) => state.auth.isInitialized;
+export const selectUser = selectFirebaseUser;
+
 export default authSlice.reducer; 

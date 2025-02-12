@@ -13,10 +13,13 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../theme/ThemeProvider';
-import { signInWithEmail, signInWithGoogle, signUpWithEmail } from '../../services/auth';
 import { createLogger } from '../../utils/logger';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/types';
+import { useAppDispatch } from '../../store/hooks';
+import { useSelector } from 'react-redux';
+import { signIn, signUp, signInWithGoogle as signInWithGoogleAction } from '../../store/slices/authSlice';
+import { selectAuthLoadingStates } from '../../store/slices/firebase/selectors';
 
 const logger = createLogger('AuthScreen');
 
@@ -24,10 +27,13 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Auth'>;
 
 export function AuthScreen() {
   const theme = useTheme();
+  const dispatch = useAppDispatch();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const { isSigningIn, isSigningUp } = useSelector(selectAuthLoadingStates);
+  
+  const isLoading = isSigningIn || isSigningUp;
 
   const handleEmailAuth = async () => {
     if (!email || !password) {
@@ -45,20 +51,13 @@ export function AuthScreen() {
       return;
     }
 
-    setIsLoading(true);
     try {
       logger.info(`Starting email ${isSignUp ? 'sign up' : 'sign in'}`);
-      const response = isSignUp 
-        ? await signUpWithEmail(email, password)
-        : await signInWithEmail(email, password);
-      
-      if (response.error) {
-        logger.error(`Email ${isSignUp ? 'sign up' : 'sign in'} failed`, { 
-          errorCode: response.error.code,
-          errorMessage: response.error.message
-        });
-        Alert.alert('Authentication Failed', response.error.message);
-      }
+      await dispatch(
+        isSignUp 
+          ? signUp({ email, password })
+          : signIn({ email, password })
+      ).unwrap();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
       logger.error(`Unexpected error during email ${isSignUp ? 'sign up' : 'sign in'}`, { 
@@ -69,27 +68,13 @@ export function AuthScreen() {
         } : error
       });
       Alert.alert('Authentication Error', errorMessage);
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true);
     try {
       logger.info('Initiating Google sign in');
-      const response = await signInWithGoogle();
-      
-      if (response.error) {
-        logger.error('Google sign in failed', { 
-          errorCode: response.error.code,
-          errorMessage: response.error.message
-        });
-        Alert.alert(
-          'Authentication Failed',
-          'Unable to sign in with Google. Please try again.'
-        );
-      }
+      await dispatch(signInWithGoogleAction()).unwrap();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
       logger.error('Unexpected error during Google sign in', { 
@@ -100,8 +85,6 @@ export function AuthScreen() {
         } : error
       });
       Alert.alert('Authentication Error', errorMessage);
-    } finally {
-      setIsLoading(false);
     }
   };
 

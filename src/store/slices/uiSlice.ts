@@ -4,7 +4,19 @@ import { RootState } from '../';
 
 const logger = createLogger('UISlice');
 
-interface UIState {
+interface LoadingState {
+  isLoading: boolean;  // Currently loading
+  isLoaded: boolean;   // Successfully loaded
+  error: string | null // Any error that occurred
+}
+
+interface UILoadingStates {
+  comments: LoadingState;
+  tip: LoadingState;
+  like: LoadingState;
+}
+
+interface UIState extends LoadingState {
   // Visibility States
   isCommentsVisible: boolean;
   isOverlayVisible: boolean;
@@ -15,19 +27,19 @@ interface UIState {
   toasts: {
     id: string;
     message: string;
-    type: 'success' | 'error' | 'info';
+    type: 'success' | 'error' | 'info' | 'warning';
   }[];
 
   // Loading States
-  loadingStates: {
-    isLoadingComments: boolean;
-    isSubmittingComment: boolean;
-    isProcessingTip: boolean;
-    isProcessingLike: boolean;
-  };
+  loadingStates: UILoadingStates;
 }
 
 const initialState: UIState = {
+  // Root loading state
+  isLoading: false,
+  isLoaded: false,
+  error: null,
+
   // Visibility States
   isCommentsVisible: false,
   isOverlayVisible: true,
@@ -39,10 +51,9 @@ const initialState: UIState = {
 
   // Loading States
   loadingStates: {
-    isLoadingComments: false,
-    isSubmittingComment: false,
-    isProcessingTip: false,
-    isProcessingLike: false,
+    comments: { isLoading: false, isLoaded: false, error: null },
+    tip: { isLoading: false, isLoaded: false, error: null },
+    like: { isLoading: false, isLoaded: false, error: null }
   }
 };
 
@@ -77,7 +88,7 @@ const uiSlice = createSlice({
     // Toast Actions
     addToast: (state, action: PayloadAction<{
       message: string;
-      type: 'success' | 'error' | 'info';
+      type: 'success' | 'error' | 'info' | 'warning';
     }>) => {
       const toast = {
         id: Date.now().toString(),
@@ -94,16 +105,29 @@ const uiSlice = createSlice({
 
     // Loading State Actions
     setLoadingState: (state, action: PayloadAction<{
-      key: keyof UIState['loadingStates'];
-      value: boolean;
+      key: keyof UILoadingStates;
+      loading: boolean;
+      loaded?: boolean;
+      error?: string | null;
     }>) => {
-      state.loadingStates[action.payload.key] = action.payload.value;
+      const { key, loading, loaded = false, error = null } = action.payload;
+      state.loadingStates[key] = {
+        isLoading: loading,
+        isLoaded: loaded,
+        error
+      };
       logger.debug('Loading state updated', action.payload);
     },
   },
 });
 
 // Selectors
+export const selectUIState = (state: RootState): LoadingState => ({
+  isLoading: state.ui.isLoading,
+  isLoaded: state.ui.isLoaded,
+  error: state.ui.error
+});
+
 export const selectVisibilityState = (state: RootState) => ({
   isCommentsVisible: state.ui.isCommentsVisible,
   isOverlayVisible: state.ui.isOverlayVisible,
@@ -131,34 +155,32 @@ export const selectLatestToast = (state: RootState) =>
 export const selectAllLoadingStates = (state: RootState) => 
   state.ui.loadingStates;
 
-export const selectIsLoadingComments = (state: RootState) => 
-  state.ui.loadingStates.isLoadingComments;
+export const selectCommentsLoadingState = (state: RootState): LoadingState => 
+  state.ui.loadingStates.comments;
 
-export const selectIsSubmittingComment = (state: RootState) => 
-  state.ui.loadingStates.isSubmittingComment;
+export const selectTipLoadingState = (state: RootState): LoadingState => 
+  state.ui.loadingStates.tip;
 
-export const selectIsProcessingTip = (state: RootState) => 
-  state.ui.loadingStates.isProcessingTip;
+export const selectLikeLoadingState = (state: RootState): LoadingState => 
+  state.ui.loadingStates.like;
 
-export const selectIsProcessingLike = (state: RootState) => 
-  state.ui.loadingStates.isProcessingLike;
+export const selectIsProcessingLike = (state: RootState): boolean => 
+  state.ui.loadingStates.like.isLoading;
 
-// Combined selectors
-export const selectInteractionLoadingStates = (state: RootState) => ({
-  isLoadingComments: state.ui.loadingStates.isLoadingComments,
-  isSubmittingComment: state.ui.loadingStates.isSubmittingComment,
-  isProcessingTip: state.ui.loadingStates.isProcessingTip,
-  isProcessingLike: state.ui.loadingStates.isProcessingLike
-});
+export const selectIsProcessingTip = (state: RootState): boolean => 
+  state.ui.loadingStates.tip.isLoading;
+
+export const selectIsLoadingComments = (state: RootState): boolean => 
+  state.ui.loadingStates.comments.isLoading;
+
+export const selectIsSubmittingComment = (state: RootState): boolean => 
+  state.ui.loadingStates.comments.isLoading;
 
 // Combined loading states selector
 export const selectCombinedLoadingState = (state: RootState) => ({
-  isLoadingComments: state.ui.loadingStates.isLoadingComments,
-  isSubmittingComment: state.ui.loadingStates.isSubmittingComment,
-  isProcessingLike: state.ui.loadingStates.isProcessingLike,
-  isProcessingTip: state.ui.loadingStates.isProcessingTip,
-  isProcessingVideo: state.video.loadingStates.isProcessingVideo,
-  isLoadingMetadata: state.video.loadingStates.isLoadingMetadata
+  comments: state.ui.loadingStates.comments,
+  tip: state.ui.loadingStates.tip,
+  like: state.ui.loadingStates.like
 });
 
 export const {

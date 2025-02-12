@@ -6,6 +6,11 @@ import { store } from './store';
 import { RootNavigator } from './navigation/RootNavigator';
 import { initializeServices } from './services/initialize';
 import { createLogger } from './utils/logger';
+import { LogBox } from 'react-native';
+
+LogBox.ignoreLogs([
+  "(NOBRIDGE) WARN  This v8 method is deprecated"
+]);
 
 const logger = createLogger('App');
 

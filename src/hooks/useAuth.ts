@@ -1,36 +1,77 @@
-import { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { signOut, initializeAuth, cleanupAuth } from '../store/slices/authSlice';
-import type { RootState, AppDispatch } from '../store';
-import { AnyAction, ThunkDispatch } from '@reduxjs/toolkit';
+import { useCallback } from 'react';
+import { useSelector } from 'react-redux';
+import { 
+  selectAuthState, 
+  selectUser,
+  selectIsAuthInitialized,
+  initializeAuth,
+  signOut,
+  signIn,
+  signUp,
+  signInWithGoogle
+} from '../store/slices/authSlice';
+import { useLoadingState } from './useLoadingState';
+import type { LoadingState } from '../types/state';
+import type { User } from '../types/auth';
+import { createLogger } from '../utils/logger';
+import { useAppDispatch } from '../store/hooks';
 
-export function useAuth() {
-  const dispatch = useDispatch<ThunkDispatch<RootState, unknown, AnyAction>>();
-  const { user, isLoading: loading, error, isInitialized } = useSelector((state: RootState) => state.auth);
+const logger = createLogger('useAuth');
 
-  // Initialize auth state listener
-  useEffect(() => {
-    dispatch(initializeAuth());
-    return () => {
-      dispatch(cleanupAuth());
-    };
+interface UseAuthResult extends LoadingState {
+  user: User | null;
+  isInitialized: boolean;
+  signIn: (credentials: { email: string; password: string }) => Promise<void>;
+  signUp: (credentials: { email: string; password: string }) => Promise<void>;
+  signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+}
+
+export function useAuth(): UseAuthResult {
+  const dispatch = useAppDispatch();
+  const authState = useSelector(selectAuthState);
+  const user = useSelector(selectUser);
+  const isInitialized = useSelector(selectIsAuthInitialized);
+
+  const load = useCallback(() => {
+    if (!isInitialized) {
+      logger.info('Initializing auth');
+      return dispatch(initializeAuth());
+    }
+    return Promise.resolve();
+  }, [dispatch, isInitialized]);
+
+  // Use the standard loading state pattern
+  const loadingState = useLoadingState(authState, load);
+
+  // Auth methods
+  const handleSignIn = useCallback(async (credentials: { email: string; password: string }) => {
+    logger.info('Signing in', { email: credentials.email });
+    await dispatch(signIn(credentials));
   }, [dispatch]);
 
-  const handleSignOut = async () => {
-    try {
-      await dispatch(signOut()).unwrap();
-    } catch (error) {
-      // Error is already handled in the slice
-      console.error('Sign out error:', error);
-    }
-  };
+  const handleSignUp = useCallback(async (credentials: { email: string; password: string }) => {
+    logger.info('Signing up', { email: credentials.email });
+    await dispatch(signUp(credentials));
+  }, [dispatch]);
+
+  const handleSignOut = useCallback(async () => {
+    logger.info('Signing out');
+    await dispatch(signOut());
+  }, [dispatch]);
+
+  const handleGoogleSignIn = useCallback(async () => {
+    logger.info('Signing in with Google');
+    await dispatch(signInWithGoogle());
+  }, [dispatch]);
 
   return {
+    ...loadingState,
     user,
-    loading,
-    error,
     isInitialized,
+    signIn: handleSignIn,
+    signUp: handleSignUp,
     signOut: handleSignOut,
-    isAuthenticated: !!user,
+    signInWithGoogle: handleGoogleSignIn,
   };
 } 

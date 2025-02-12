@@ -1,258 +1,200 @@
-import { db, storage as storageInstance } from '../config/firebase';
-import type { 
-  FirebaseFirestoreTypes,
-} from '@react-native-firebase/firestore';
-import { 
-  collection,
-  query,
-  orderBy as firestoreOrderBy,
-  limit,
-  getDocs,
-  doc,
-  getDoc,
-  setDoc,
-  startAfter,
-} from '@react-native-firebase/firestore';
-import type { FirebaseStorageTypes } from '@react-native-firebase/storage';
-import { 
-  ref,
-  getDownloadURL,
-  list,
-} from '@react-native-firebase/storage';
 import { createLogger } from '../utils/logger';
+import type { VideoData, VideoWithMetadata } from '../types/video';
+import type { VideoMetadata } from '../types/firestore';
+import type { QueryDocumentSnapshot, DocumentData, QueryConstraint } from 'firebase/firestore';
+import { serviceManager } from '../store/slices/firebase/services/ServiceManager';
+import { collection, query, limit, startAfter, getDocs, doc, getDoc, setDoc, deleteDoc, orderBy } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 const logger = createLogger('VideoService');
 
-export interface VideoData {
-  id: string;
-  url: string;
-  createdAt: number;
-}
-
-export interface VideoMetadata {
-  id: string;
-  creatorId: string;
-  createdAt: number;
-  stats: {
-    views: number;
-    likes: number;
-    superLikes?: number;
-    dislikes?: number;
-    superDislikes?: number;
-    comments?: number;
-    tips?: number;
-  };
-}
-
-export interface VideoWithMetadata {
-  video: VideoData;
-  metadata: VideoMetadata;
-}
+const VIDEOS_COLLECTION = 'videos';
 
 class VideoService {
-  async fetchVideos(limitCount: number, startAfterDoc?: FirebaseFirestoreTypes.QueryDocumentSnapshot): Promise<{
+  private getFirebaseServices() {
+    const firestoreService = serviceManager.getFirestoreService();
+    const storageService = serviceManager.getStorageService();
+    return { firestoreService, storageService };
+  }
+
+  async fetchVideos(
+    limitCount: number,
+    lastDoc?: QueryDocumentSnapshot<DocumentData, DocumentData>
+  ): Promise<{
     videos: VideoWithMetadata[];
-    lastVisible: FirebaseFirestoreTypes.QueryDocumentSnapshot | null;
+    lastVisible: QueryDocumentSnapshot<DocumentData> | null;
     hasMore: boolean;
   }> {
-    try {
-      logger.info('Fetching videos', { limit: limitCount, hasStartAfter: !!startAfterDoc });
+    logger.info('Fetching videos', { 
+      limit: limitCount, 
+      hasStartAfter: !!lastDoc,
+      startAfterId: lastDoc?.id
+    });
 
-      const videosRef = collection(db, 'videos');
-      const queryConstraints = [
-        firestoreOrderBy('createdAt', 'desc'),
+    try {
+      const { firestoreService } = this.getFirebaseServices();
+      const db = firestoreService['db'];
+      const videosRef = collection(db, VIDEOS_COLLECTION);
+      
+      const constraints: QueryConstraint[] = [
+        orderBy('createdAt', 'desc'),
         limit(limitCount)
       ];
 
-      if (startAfterDoc) {
-        queryConstraints.push(startAfter(startAfterDoc));
+      if (lastDoc) {
+        constraints.push(startAfter(lastDoc));
       }
 
-      const videoQuery = query(videosRef, ...queryConstraints);
+      const queryRef = query(videosRef, ...constraints);
+      const snapshot = await getDocs(queryRef);
+      const videos: VideoWithMetadata[] = [];
 
-      logger.info('Executing Firestore query', { 
-        collection: 'videos',
-        orderBy: 'createdAt',
-        limit: limitCount,
-        hasStartAfter: !!startAfterDoc 
-      });
-
-      const querySnapshot = await getDocs(videoQuery);
-      logger.info('Got video documents', { 
-        count: querySnapshot.docs.length,
-        isEmpty: querySnapshot.empty,
-        docs: querySnapshot.docs.map(doc => ({
+      logger.debug('Processing video documents', {
+        snapshotSize: snapshot.size,
+        docs: snapshot.docs.map(doc => ({
           id: doc.id,
-          exists: doc.exists,
-          data: doc.data()
+          exists: doc.exists(),
+          dataFields: Object.keys(doc.data())
         }))
       });
 
-      const videos = await Promise.all(
-        querySnapshot.docs.map(async (document) => {
-          try {
-            const video = document.data() as VideoData;
-            logger.info('Processing video document', { 
-              docId: document.id, 
-              hasUrl: !!video.url,
-              createdAt: video.createdAt,
-              videoFields: Object.keys(video)
-            });
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        logger.debug('Processing individual video document', {
+          docId: doc.id,
+          rawData: data,
+          hasStoragePath: !!data.storagePath,
+          storagePath: data.storagePath,
+          metadata: data.metadata
+        });
 
-            if (!video.url?.startsWith('https://firebasestorage.googleapis.com')) {
-              logger.info('Fetching Firebase Storage URL', { videoId: document.id });
-              try {
-                const storageRef = ref(storageInstance, `videos/${document.id}`);
-                video.url = await getDownloadURL(storageRef);
-                logger.info('Got Firebase Storage URL', { 
-                  videoId: document.id,
-                  hasUrl: !!video.url,
-                  url: video.url
-                });
-              } catch (urlError) {
-                logger.error('Failed to get Firebase Storage URL', { 
-                  videoId: document.id,
-                  error: urlError
-                });
-                throw urlError;
-              }
-            }
-            
-            const metadata = await this.ensureVideoMetadata(document.id);
-            return { video: { ...video, id: document.id }, metadata };
-          } catch (error) {
-            logger.error('Failed to process video document', {
-              docId: document.id,
-              error: error instanceof Error ? error.message : error
-            });
-            throw error;
-          }
-        })
-      );
+        try {
+          const { storageService } = this.getFirebaseServices();
+          const storage = storageService['storage'];
+          const storagePath = data.storagePath || `videos/${doc.id}`;
+          const videoRef = ref(storage, storagePath);
+          
+          logger.debug('Fetching video URL', {
+            docId: doc.id,
+            storagePath,
+            refFullPath: videoRef.fullPath
+          });
 
-      return {
+          const url = await getDownloadURL(videoRef);
+          
+          logger.debug('Got video URL', {
+            docId: doc.id,
+            url,
+            hasUrl: !!url
+          });
+
+          videos.push({
+            video: {
+              id: doc.id,
+              url,
+              createdAt: data.createdAt || Date.now(),
+            },
+            metadata: data.metadata || {},
+          });
+        } catch (error) {
+          logger.error('Error processing video document', {
+            docId: doc.id,
+            error: error instanceof Error ? {
+              message: error.message,
+              name: error.name,
+              stack: error.stack
+            } : error
+          });
+          // Continue processing other videos even if one fails
+          continue;
+        }
+      }
+
+      const result = {
         videos,
-        lastVisible: querySnapshot.docs[querySnapshot.docs.length - 1] || null,
-        hasMore: querySnapshot.docs.length === limitCount,
+        lastVisible: snapshot.docs[snapshot.docs.length - 1] || null,
+        hasMore: snapshot.docs.length === limitCount,
       };
+
+      logger.info('Got video documents', {
+        count: videos.length,
+        hasLastVisible: !!result.lastVisible,
+        lastVisibleId: result.lastVisible?.id,
+        hasMore: result.hasMore,
+        videoSummary: videos.map(v => ({
+          id: v.video.id,
+          hasUrl: !!v.video.url,
+          metadataFields: Object.keys(v.metadata)
+        }))
+      });
+
+      return result;
     } catch (error) {
-      logger.error('Failed to fetch videos', { 
-        error: error instanceof Error ? error.message : error
+      logger.error('Failed to fetch videos', {
+        error: error instanceof Error ? {
+          message: error.message,
+          name: error.name,
+          stack: error.stack
+        } : error,
+        limit: limitCount,
+        hasStartAfter: !!lastDoc
       });
       throw error;
     }
   }
 
   async fetchVideoById(videoId: string): Promise<VideoWithMetadata> {
-    try {
-      const videoDocRef = doc(db, 'videos', videoId);
-      const videoDoc = await getDoc(videoDocRef);
+    const { firestoreService } = this.getFirebaseServices();
+    const db = firestoreService['db'];
 
-      if (!videoDoc.exists) {
+    try {
+      const videoRef = doc(db, VIDEOS_COLLECTION, videoId);
+      const videoDoc = await getDoc(videoRef);
+
+      if (!videoDoc.exists()) {
         throw new Error(`Video ${videoId} not found`);
       }
 
-      const metadata = await this.ensureVideoMetadata(videoId);
+      const data = videoDoc.data();
       return {
-        video: { id: videoId, ...videoDoc.data() } as VideoData,
-        metadata,
-      };
+        video: {
+          id: videoDoc.id,
+          url: data.url,
+          createdAt: data.createdAt
+        },
+        metadata: data.metadata
+      } as VideoWithMetadata;
     } catch (error) {
       logger.error('Failed to fetch video by id', { videoId, error });
       throw error;
     }
   }
 
-  private async ensureVideoMetadata(videoId: string): Promise<VideoMetadata> {
-    const metadataRef = doc(db, 'videoMetadata', videoId);
-    
+  async fetchVideosAfter(pageSize = 1000, startAfterToken?: string): Promise<VideoWithMetadata[]> {
+    const { firestoreService } = this.getFirebaseServices();
+    const db = firestoreService['db'];
+
     try {
-      logger.info('Checking video metadata', { videoId });
-      const document = await getDoc(metadataRef);
-      
-      if (!document.exists) {
-        logger.info('No existing metadata found, creating default', { videoId });
-        const defaultMetadata: VideoMetadata = {
-          id: videoId,
-          creatorId: 'system',
-          createdAt: Date.now(),
-          stats: {
-            views: 0,
-            likes: 0,
-            dislikes: 0,
-            comments: 0,
-            tips: 0
-          }
-        };
+      const videosRef = collection(db, VIDEOS_COLLECTION);
+      const videosQuery = startAfterToken
+        ? query(videosRef, limit(pageSize), startAfter(doc(db, VIDEOS_COLLECTION, startAfterToken)))
+        : query(videosRef, limit(pageSize));
 
-        await setDoc(metadataRef, defaultMetadata);
-        return defaultMetadata;
-      }
-
-      return document.data() as VideoMetadata;
-    } catch (error) {
-      logger.error('Failed to ensure video metadata', { 
-        videoId, 
-        error: error instanceof Error ? error.message : error
+      const snapshot = await getDocs(videosQuery);
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          video: {
+            id: doc.id,
+            url: data.url,
+            createdAt: data.createdAt
+          },
+          metadata: data.metadata
+        } as VideoWithMetadata;
       });
-      throw error;
-    }
-  }
-
-  private async getStorageItems(startAfterToken?: string, reverse: boolean = false): Promise<FirebaseStorageTypes.Reference[]> {
-    try {
-      const storageRef = ref(storageInstance, 'videos');
-      const options = startAfterToken ? 
-        { maxResults: 1000, pageToken: startAfterToken } : 
-        { maxResults: 1000 };
-
-      const result = await list(storageRef, options);
-      return reverse ? result.items.reverse() : result.items;
-    } catch (error) {
-      logger.error('Failed to get storage items', { 
-        startAfter: startAfterToken,
-        reverse,
-        error: error instanceof Error ? error.message : error
-      });
-      throw error;
-    }
-  }
-
-  private async itemsToVideos(items: FirebaseStorageTypes.Reference[]): Promise<VideoData[]> {
-    return Promise.all(
-      items.map(async (item): Promise<VideoData> => {
-        try {
-          const url = await getDownloadURL(item);
-          return {
-            id: item.name,
-            url,
-            createdAt: Date.now()
-          };
-        } catch (error) {
-          logger.error('Failed to convert storage item to video', { 
-            itemName: item.name,
-            error: error instanceof Error ? error.message : error
-          });
-          throw error;
-        }
-      })
-    );
-  }
-
-  async fetchVideosAfter(limit = 1000, startAfterToken?: string): Promise<VideoWithMetadata[]> {
-    try {
-      const items = await this.getStorageItems(startAfterToken);
-      const videos = await this.itemsToVideos(items);
-      
-      return Promise.all(
-        videos.map(async (video) => ({
-          video,
-          metadata: await this.ensureVideoMetadata(video.id)
-        }))
-      );
     } catch (error) {
       logger.error('Failed to fetch videos after', { 
-        limit,
+        pageSize,
         startAfter: startAfterToken,
         error: error instanceof Error ? error.message : error
       });
@@ -260,20 +202,31 @@ class VideoService {
     }
   }
 
-  async fetchVideosBefore(limit = 1000, startBefore?: string): Promise<VideoWithMetadata[]> {
+  async fetchVideosBefore(pageSize = 1000, startBefore?: string): Promise<VideoWithMetadata[]> {
+    const { firestoreService } = this.getFirebaseServices();
+    const db = firestoreService['db'];
+
     try {
-      const items = await this.getStorageItems(startBefore, true);
-      const videos = await this.itemsToVideos(items);
-      
-      return Promise.all(
-        videos.map(async (video) => ({
-          video,
-          metadata: await this.ensureVideoMetadata(video.id)
-        }))
-      );
+      const videosRef = collection(db, VIDEOS_COLLECTION);
+      const videosQuery = startBefore
+        ? query(videosRef, limit(pageSize), startAfter(doc(db, VIDEOS_COLLECTION, startBefore)))
+        : query(videosRef, limit(pageSize));
+
+      const snapshot = await getDocs(videosQuery);
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          video: {
+            id: doc.id,
+            url: data.url,
+            createdAt: data.createdAt
+          },
+          metadata: data.metadata
+        } as VideoWithMetadata;
+      });
     } catch (error) {
       logger.error('Failed to fetch videos before', { 
-        limit,
+        pageSize,
         startBefore,
         error: error instanceof Error ? error.message : error
       });
@@ -282,14 +235,74 @@ class VideoService {
   }
 
   async getVideoCount(): Promise<number> {
+    const { firestoreService } = this.getFirebaseServices();
+    const db = firestoreService['db'];
+
     try {
-      const videosCollection = collection(db, 'videos');
-      const snapshot = await getDocs(videosCollection);
+      const videosRef = collection(db, VIDEOS_COLLECTION);
+      const snapshot = await getDocs(videosRef);
       return snapshot.size;
     } catch (error) {
       logger.error('Failed to get video count', { 
         error: error instanceof Error ? error.message : error
       });
+      throw error;
+    }
+  }
+
+  /**
+   * Uploads a video file to Firebase Storage
+   */
+  async uploadVideo(
+    file: Blob | Uint8Array | ArrayBuffer,
+    metadata?: { contentType?: string },
+    onProgress?: (progress: number) => void
+  ): Promise<VideoData> {
+    const { firestoreService, storageService } = this.getFirebaseServices();
+    const db = firestoreService['db'];
+    const storage = storageService['storage'];
+    
+    try {
+      const videoId = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+      const videoRef = ref(storage, `videos/${videoId}`);
+      
+      await uploadBytes(videoRef, file, metadata);
+      const url = await getDownloadURL(videoRef);
+
+      const videoData: VideoData = {
+        id: videoId,
+        url,
+        createdAt: Date.now()
+      };
+
+      await setDoc(doc(db, VIDEOS_COLLECTION, videoId), videoData);
+
+      logger.info('Video upload completed', { videoId, url });
+      return videoData;
+    } catch (error) {
+      logger.error('Failed to upload video', { 
+        error: error instanceof Error ? error.message : error
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Deletes a video and its metadata
+   */
+  async deleteVideo(videoId: string): Promise<void> {
+    const { firestoreService, storageService } = this.getFirebaseServices();
+    const db = firestoreService['db'];
+    const storage = storageService['storage'];
+    
+    try {
+      const videoRef = ref(storage, `videos/${videoId}`);
+      await deleteObject(videoRef);
+      await deleteDoc(doc(db, VIDEOS_COLLECTION, videoId));
+      
+      logger.info('Video deleted successfully', { videoId });
+    } catch (error) {
+      logger.error('Failed to delete video', { videoId, error });
       throw error;
     }
   }

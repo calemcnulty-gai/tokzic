@@ -1,10 +1,32 @@
-import { app, db } from '../config/firebase';
-import auth from '@react-native-firebase/auth';
-import { getStorage } from '@react-native-firebase/storage';
+import { serviceManager } from '../store/slices/firebase/services/ServiceManager';
+import { createLogger } from '../utils/logger';
 
-// Initialize services
-const firebaseAuth = auth();
-const storage = getStorage();
+const logger = createLogger('FirebaseService');
 
-// Export Firebase services
-export { app, firebaseAuth as auth, db as firestore, storage }; 
+// Get Firebase service instances
+export const getAuth = () => {
+  const auth = serviceManager.getAuthService().getAuth();
+  if (!auth) {
+    logger.error('Auth service not initialized');
+    throw new Error('Auth service not initialized');
+  }
+  return auth;
+};
+
+export const getFirestore = () => {
+  const db = serviceManager.getFirestoreService().getFirestore();
+  if (!db) {
+    logger.error('Firestore service not initialized');
+    throw new Error('Firestore service not initialized');
+  }
+  return db;
+};
+
+export const getStorage = () => {
+  const storage = serviceManager.getStorageService().getStorage();
+  if (!storage) {
+    logger.error('Storage service not initialized');
+    throw new Error('Storage service not initialized');
+  }
+  return storage;
+}; 

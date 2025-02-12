@@ -1,12 +1,21 @@
-import { auth, db } from '../config/firebase';
 import { Collections, Swipe } from '../types/firestore';
+import { serviceManager } from '../store/slices/firebase/services/ServiceManager';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('SwipeService');
 
 export const createSwipe = async (
   videoId: string,
   direction: 'left' | 'right'
 ): Promise<void> => {
+  const auth = serviceManager.getAuthService().getAuth();
+  const db = serviceManager.getFirestoreService().getFirestore();
+  
   const user = auth.currentUser;
-  if (!user) throw new Error('User must be logged in to swipe');
+  if (!user) {
+    logger.error('User must be logged in to swipe');
+    throw new Error('User must be logged in to swipe');
+  }
 
   const swipe: Omit<Swipe, 'id'> = {
     videoId,
@@ -21,8 +30,14 @@ export const createSwipe = async (
 };
 
 export const getUserSwipes = async (videoId: string): Promise<Swipe[]> => {
+  const auth = serviceManager.getAuthService().getAuth();
+  const db = serviceManager.getFirestoreService().getFirestore();
+  
   const user = auth.currentUser;
-  if (!user) return [];
+  if (!user) {
+    logger.debug('No user logged in, returning empty swipes array');
+    return [];
+  }
 
   const snapshot = await db
     .collection(Collections.SWIPES)

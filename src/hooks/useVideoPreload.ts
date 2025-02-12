@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { videoCacheManager } from '../services/video-cache';
 import type { RootState } from '../store';
 import { createLogger } from '../utils/logger';
-import { VideoData } from '../services/video';
+import { VideoData } from '../types/video';
 
 const logger = createLogger('useVideoPreload');
 

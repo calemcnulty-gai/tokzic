@@ -20,6 +20,8 @@ This repository is organized into two main areas:
   - `/services` - Service modules and API integration
   - `/utils` - Utility functions
   - `/types` - TypeScript type definitions
+- `/docs` - Project documentation
+  - `firebase-guide.md` - Firebase integration guide
 
 ## Development
 
@@ -79,3 +81,6 @@ npx expo run:android
 - Write pure, composable functions
 - Keep functions under 60 lines
 - Maintain clear documentation
+
+## Firebase Integration
+Tokzic uses Firebase for authentication, data storage, file storage, and analytics. All Firebase services are managed through Redux to ensure a single source of truth. For detailed information about our Firebase implementation, see the [Firebase Guide](docs/firebase-guide.md).

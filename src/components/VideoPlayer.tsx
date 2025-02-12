@@ -1,11 +1,10 @@
 import React, { useCallback, useRef, memo } from 'react';
 import { View, StyleSheet, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
-import { VideoData } from '../services/video';
+import { VideoData } from '../types/video';
 import { VideoMetadata } from '../types/firestore';
 import { createLogger } from '../utils/logger';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { AnyAction, ThunkDispatch } from '@reduxjs/toolkit';
 import { RootState } from '../store';
 import {
   handlePlaybackStatusUpdate,
@@ -27,14 +26,51 @@ const updatePlaybackStatus = createAction<AVPlaybackStatus>('video/updatePlaybac
 
 export const VideoPlayer = memo(function VideoPlayer({ video, metadata, shouldPlay }: VideoPlayerProps) {
   const videoRef = useRef<Video | null>(null);
-  const dispatch = useAppDispatch() as ThunkDispatch<RootState, unknown, AnyAction>;
+  const isMounted = useRef(true);
+  const dispatch = useAppDispatch();
+
+  // Cleanup on unmount
+  React.useEffect(() => {
+    return () => {
+      isMounted.current = false;
+      if (videoRef.current) {
+        try {
+          videoRef.current.unloadAsync();
+        } catch (error) {
+          logger.error('Error unloading video', { 
+            videoId: video.id,
+            error
+          });
+        }
+      }
+    };
+  }, [video.id]);
 
   // Get playback state from Redux
-  const { isPlaying, isBuffering } = useAppSelector(selectPlaybackState);
+  const { isPlaying, isBuffering } = useAppSelector(state => state.video.player);
+
+  logger.debug('VideoPlayer render', {
+    videoId: video.id,
+    url: video.url,
+    shouldPlay,
+    isPlaying,
+    isBuffering
+  });
 
   const handlePlaybackStatusUpdate = useCallback((status: AVPlaybackStatus) => {
+    if (!isMounted.current) return;
+    
     dispatch(updatePlaybackStatus(status));
-  }, [dispatch]);
+    if (status?.isLoaded) {
+      logger.debug('Playback status update', {
+        videoId: video.id,
+        isPlaying: status.isPlaying,
+        isBuffering: status.isBuffering,
+        positionMillis: status.positionMillis,
+        durationMillis: status.durationMillis
+      });
+    }
+  }, [dispatch, video.id]);
 
   const handleVideoPress = useCallback(async () => {
     if (!videoRef.current) return;

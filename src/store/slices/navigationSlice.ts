@@ -1,11 +1,18 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { createLogger } from '../../utils/logger';
+import { RootState } from '../';
 
 const logger = createLogger('NavigationSlice');
 
 export type RouteType = 'feed' | 'profile' | 'upload' | 'settings' | 'auth';
 
-interface NavigationState {
+interface LoadingState {
+  isLoading: boolean;  // Currently loading
+  isLoaded: boolean;   // Successfully loaded
+  error: string | null // Any error that occurred
+}
+
+interface NavigationState extends LoadingState {
   currentRoute: RouteType;
   previousRoute: RouteType | null;
   navigationHistory: RouteType[];
@@ -15,6 +22,12 @@ interface NavigationState {
 }
 
 const initialState: NavigationState = {
+  // Loading state
+  isLoading: false,
+  isLoaded: true, // Navigation is loaded by default
+  error: null,
+
+  // Navigation state
   currentRoute: 'feed',
   previousRoute: null,
   navigationHistory: ['feed'],
@@ -28,6 +41,9 @@ const navigationSlice = createSlice({
   initialState,
   reducers: {
     navigateTo: (state, action: PayloadAction<RouteType>) => {
+      state.isLoading = true;
+      state.isLoaded = false;
+      state.error = null;
       state.previousRoute = state.currentRoute;
       state.currentRoute = action.payload;
       state.navigationHistory.push(action.payload);
@@ -38,8 +54,20 @@ const navigationSlice = createSlice({
       });
     },
     navigationComplete: (state) => {
+      state.isLoading = false;
+      state.isLoaded = true;
       state.isNavigating = false;
       logger.info('Navigation completed', { 
+        currentRoute: state.currentRoute 
+      });
+    },
+    navigationError: (state, action: PayloadAction<string>) => {
+      state.isLoading = false;
+      state.isLoaded = false;
+      state.error = action.payload;
+      state.isNavigating = false;
+      logger.error('Navigation error', { 
+        error: action.payload,
         currentRoute: state.currentRoute 
       });
     },
@@ -61,6 +89,9 @@ const navigationSlice = createSlice({
     },
     goBack: (state) => {
       if (state.navigationHistory.length > 1) {
+        state.isLoading = true;
+        state.isLoaded = false;
+        state.error = null;
         state.navigationHistory.pop(); // Remove current route
         const previousRoute = state.navigationHistory[state.navigationHistory.length - 1];
         state.previousRoute = state.currentRoute;
@@ -78,6 +109,9 @@ const navigationSlice = createSlice({
       state.navigationHistory = ['feed'];
       state.isNavigating = false;
       state.deepLinkPending = null;
+      state.isLoading = false;
+      state.isLoaded = true;
+      state.error = null;
       logger.info('Navigation reset to initial state');
     },
   },
@@ -86,11 +120,26 @@ const navigationSlice = createSlice({
 export const {
   navigateTo,
   navigationComplete,
+  navigationError,
   setDeepLink,
   clearDeepLink,
   updateAuthRequiredRoutes,
   goBack,
   resetNavigation,
 } = navigationSlice.actions;
+
+// Selectors
+export const selectNavigationState = (state: RootState): LoadingState => ({
+  isLoading: state.navigation.isLoading,
+  isLoaded: state.navigation.isLoaded,
+  error: state.navigation.error
+});
+
+export const selectCurrentRoute = (state: RootState) => state.navigation.currentRoute;
+export const selectPreviousRoute = (state: RootState) => state.navigation.previousRoute;
+export const selectNavigationHistory = (state: RootState) => state.navigation.navigationHistory;
+export const selectDeepLinkPending = (state: RootState) => state.navigation.deepLinkPending;
+export const selectIsNavigating = (state: RootState) => state.navigation.isNavigating;
+export const selectAuthRequiredRoutes = (state: RootState) => state.navigation.authRequiredRoutes;
 
 export default navigationSlice.reducer; 

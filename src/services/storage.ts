@@ -1,4 +1,4 @@
-import { storage } from '../config/firebase';
+import { store } from '../store';
 import { createLogger } from '../utils/logger';
 
 const logger = createLogger('StorageService');
@@ -13,9 +13,14 @@ export const uploadVideo = async (
   filename: string,
   data: Blob | Uint8Array | ArrayBuffer
 ): Promise<string> => {
-  const reference = storage.ref(`videos/${filename}`);
-  await reference.put(data);
-  return reference.getDownloadURL();
+  const state = store.getState();
+  const { storageService } = state.firebase;
+
+  if (!storageService) {
+    throw new Error('Storage service not initialized');
+  }
+
+  return storageService.uploadVideo(filename, data);
 };
 
 /**
@@ -23,8 +28,14 @@ export const uploadVideo = async (
  * @param filename Name of the video file in storage
  */
 export const deleteVideo = async (filename: string): Promise<void> => {
-  const reference = storage.ref(`videos/${filename}`);
-  await reference.delete();
+  const state = store.getState();
+  const { storageService } = state.firebase;
+
+  if (!storageService) {
+    throw new Error('Storage service not initialized');
+  }
+
+  return storageService.deleteVideo(filename);
 };
 
 /**
@@ -33,6 +44,12 @@ export const deleteVideo = async (filename: string): Promise<void> => {
  * @returns Download URL of the video
  */
 export const getVideoUrl = async (filename: string): Promise<string> => {
-  const reference = storage.ref(`videos/${filename}`);
-  return reference.getDownloadURL();
+  const state = store.getState();
+  const { storageService } = state.firebase;
+
+  if (!storageService) {
+    throw new Error('Storage service not initialized');
+  }
+
+  return storageService.getVideoUrl(filename);
 }; 

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import { VideoData } from '../../services/video';
+import type { VideoData } from '../../types/video';
 import { VideoMetadata } from '../../types/firestore';
 import { VideoPlayer } from '../VideoPlayer';
 import { createLogger } from '../../utils/logger';

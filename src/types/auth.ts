@@ -1,4 +1,4 @@
-import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import type { User as FirebaseUser } from '@firebase/auth';
 
 export interface User {
   uid: string;
@@ -6,13 +6,7 @@ export interface User {
   displayName: string | null;
   photoURL: string | null;
   isAnonymous: boolean;
-  metadata: {
-    creationTime?: string;
-    lastSignInTime?: string;
-  };
 }
-
-export type FirebaseUser = FirebaseAuthTypes.User;
 
 export function mapFirebaseUser(user: FirebaseUser | null): User | null {
   if (!user) return null;
@@ -23,9 +17,5 @@ export function mapFirebaseUser(user: FirebaseUser | null): User | null {
     displayName: user.displayName,
     photoURL: user.photoURL,
     isAnonymous: user.isAnonymous,
-    metadata: {
-      creationTime: user.metadata.creationTime,
-      lastSignInTime: user.metadata.lastSignInTime,
-    },
   };
 } 

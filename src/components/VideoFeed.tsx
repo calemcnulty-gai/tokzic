@@ -1,17 +1,12 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
-import { VideoData } from '../services/video';
+import { VideoData } from '../types/video';
 import { VideoMetadata } from '../types/firestore';
 import { VideoPlayer } from './VideoPlayer';
 import { createLogger } from '../utils/logger';
 import { theme } from '../theme/theme';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { 
-  selectFeedState, 
-  setActiveIndex, 
-  selectCurrentVideo,
-  selectPlaybackState
-} from '../store/slices/videoSlice';
+import { setActiveIndex } from '../store/slices/videoSlice';
 
 const logger = createLogger('VideoFeed');
 
@@ -29,9 +24,9 @@ export function VideoFeed({
   onIndexChange,
 }: VideoFeedProps) {
   const dispatch = useAppDispatch();
-  const { activeIndex } = useAppSelector(selectFeedState);
-  const currentVideo = useAppSelector(selectCurrentVideo);
-  const { isBuffering } = useAppSelector(selectPlaybackState);
+  const { activeIndex, mountTime, lastIndexChangeTime } = useAppSelector(state => state.video.feed);
+  const currentVideo = useAppSelector(state => state.video.currentVideo);
+  const { isBuffering } = useAppSelector(state => state.video.player);
 
   // Handle index changes
   React.useEffect(() => {

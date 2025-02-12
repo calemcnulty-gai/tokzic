@@ -1,19 +1,26 @@
-import { auth } from '../config/firebase';
-import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { firebase } from '@react-native-firebase/auth';
-import { GoogleSignin, type ConfigureParams } from '@react-native-google-signin/google-signin';
-import { createLogger } from '../utils/logger';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
+  signInWithCredential,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  onAuthStateChanged as onFirebaseAuthStateChanged,
+  signOut as firebaseSignOut,
+  type User,
+  type UserCredential
+} from 'firebase/auth';
 import { Platform } from 'react-native';
 import { AUTH_CONFIG } from '../config/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { serviceManager } from '../store/slices/firebase/services/ServiceManager';
+import { createLogger } from '../utils/logger';
 
 const logger = createLogger('AuthService');
-
-// Initialize Google Sign-In
-GoogleSignin.configure({
-  webClientId: AUTH_CONFIG.google.webClientId,
-  scopes: AUTH_CONFIG.google.scopes,
-} as ConfigureParams);
 
 export interface AuthError {
   code: string;
@@ -21,250 +28,163 @@ export interface AuthError {
 }
 
 export interface AuthResponse {
-  user: FirebaseAuthTypes.User | null;
+  user: User | null;
   error: AuthError | null;
 }
 
+// Helper function to safely get error details
+const getErrorDetails = (error: unknown): AuthError => {
+  if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
+    return {
+      code: String(error.code) || 'auth/unknown',
+      message: String(error.message) || 'An unknown error occurred'
+    };
+  }
+  return {
+    code: 'auth/unknown',
+    message: error instanceof Error ? error.message : 'An unknown error occurred'
+  };
+};
+
 export const signInWithEmail = async (email: string, password: string): Promise<AuthResponse> => {
-  logger.info('Starting email/password sign in');
   try {
-    const userCredential = await auth.signInWithEmailAndPassword(email, password);
-    logger.info('Email sign in successful', { userId: userCredential.user.uid });
-    return { user: userCredential.user, error: null };
-  } catch (error: any) {
-    logger.error('Email sign in error', { 
-      error: {
-        code: error.code,
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      }
-    });
+    logger.info('Attempting email sign in', { email });
+    const auth = serviceManager.getAuthService().getAuth();
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    logger.info('Email sign in successful');
+    return {
+      user: userCredential.user,
+      error: null
+    };
+  } catch (error) {
+    logger.error('Email sign in failed', { error });
     return {
       user: null,
-      error: {
-        code: error.code || 'unknown',
-        message: error.message || 'An unexpected error occurred',
-      },
+      error: getErrorDetails(error)
     };
   }
 };
 
 export const signUpWithEmail = async (email: string, password: string): Promise<AuthResponse> => {
-  logger.info('Starting email/password sign up');
   try {
-    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-    logger.info('Email sign up successful', { userId: userCredential.user.uid });
-    return { user: userCredential.user, error: null };
-  } catch (error: any) {
-    logger.error('Email sign up error', { 
-      error: {
-        code: error.code,
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      }
-    });
+    logger.info('Attempting email sign up', { email });
+    const auth = serviceManager.getAuthService().getAuth();
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    logger.info('Email sign up successful');
+    return {
+      user: userCredential.user,
+      error: null
+    };
+  } catch (error) {
+    logger.error('Email sign up failed', { error });
     return {
       user: null,
-      error: {
-        code: error.code || 'unknown',
-        message: error.message || 'An unexpected error occurred',
-      },
+      error: getErrorDetails(error)
     };
   }
 };
 
 export const sendSignInLink = async (email: string): Promise<{ error: AuthError | null }> => {
   try {
-    logger.info('Starting email link sign-in process', { 
-      email: email.substring(0, 3) + '...',
-      config: {
-        url: AUTH_CONFIG.emailLink.url,
-        handleCodeInApp: AUTH_CONFIG.emailLink.handleCodeInApp,
-        iOS: AUTH_CONFIG.emailLink.iOS,
-        android: AUTH_CONFIG.emailLink.android,
-        forceSameDevice: AUTH_CONFIG.emailLink.forceSameDevice
-      }
-    });
+    logger.info('Sending sign in link', { email });
+    const auth = serviceManager.getAuthService().getAuth();
+    const actionCodeSettings = {
+      url: AUTH_CONFIG.emailLink.url,
+      handleCodeInApp: true,
+      iOS: AUTH_CONFIG.emailLink.iOS,
+      android: AUTH_CONFIG.emailLink.android,
+      dynamicLinkDomain: AUTH_CONFIG.emailLink.url
+    };
 
-    // Log the full Firebase auth instance state
-    const currentUser = auth.currentUser;
-    logger.debug('Current Firebase auth state', {
-      hasCurrentUser: !!currentUser,
-      currentUserId: currentUser?.uid,
-      isEmailVerified: currentUser?.emailVerified
-    });
-    
-    // Attempt to send the link
-    logger.info('Calling sendSignInLinkToEmail');
-    await auth.sendSignInLinkToEmail(email, AUTH_CONFIG.emailLink);
-    
-    // Save the email for later use
-    logger.info('Saving email to AsyncStorage');
+    await sendSignInLinkToEmail(auth, email, actionCodeSettings);
     await AsyncStorage.setItem('emailForSignIn', email);
-    
     logger.info('Sign in link sent successfully');
     return { error: null };
-  } catch (error: any) {
-    logger.error('Error sending sign in link', { 
-      error: {
-        code: error.code,
-        message: error.message,
-        name: error.name,
-        stack: error.stack,
-        nativeErrorCode: error.nativeErrorCode,
-        nativeErrorMessage: error.nativeErrorMessage
-      },
-      config: {
-        url: AUTH_CONFIG.emailLink.url,
-        handleCodeInApp: AUTH_CONFIG.emailLink.handleCodeInApp,
-        hasIOSConfig: !!AUTH_CONFIG.emailLink.iOS,
-        hasAndroidConfig: !!AUTH_CONFIG.emailLink.android
-      },
-      firebaseState: {
-        hasCurrentUser: !!auth.currentUser,
-        providerId: auth.currentUser?.providerId
-      }
-    });
+  } catch (error) {
+    logger.error('Failed to send sign in link', { error });
     return {
-      error: {
-        code: error.code || 'unknown',
-        message: error.message || 'Failed to send sign in link'
-      }
+      error: getErrorDetails(error)
     };
   }
 };
 
 export const completeSignInWithLink = async (email: string, link: string): Promise<AuthResponse> => {
   try {
-    logger.info('Completing sign in with link', { 
-      email: email.substring(0, 3) + '...',
-      hasLink: !!link
-    });
-
-    // Check if the link is valid
-    if (!auth.isSignInWithEmailLink(link)) {
+    logger.info('Completing sign in with link');
+    const auth = serviceManager.getAuthService().getAuth();
+    if (!isSignInWithEmailLink(auth, link)) {
       throw new Error('Invalid sign in link');
     }
 
-    const result = await auth.signInWithEmailLink(email, link);
-    logger.info('Sign in with link successful', { 
-      userId: result.user.uid,
-      isNewUser: result.additionalUserInfo?.isNewUser
-    });
-
-    // Clear stored email after successful sign in
-    await AsyncStorage.removeItem('emailForSignIn');
-
-    return { user: result.user, error: null };
-  } catch (error: any) {
-    logger.error('Error completing sign in with link', { 
-      error: {
-        code: error.code,
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      }
-    });
+    const userCredential = await signInWithEmailLink(auth, email, link);
+    logger.info('Email link sign in successful');
+    return {
+      user: userCredential.user,
+      error: null
+    };
+  } catch (error) {
+    logger.error('Email link sign in failed', { error });
     return {
       user: null,
-      error: {
-        code: error.code || 'unknown',
-        message: error.message || 'Failed to complete sign in'
-      }
+      error: getErrorDetails(error)
     };
   }
 };
 
 export const signInWithGoogle = async (): Promise<AuthResponse> => {
   try {
-    logger.info('Starting Google sign in process', {
-      webClientId: AUTH_CONFIG.google.webClientId?.substring(0, 8) + '...',
-      platform: Platform.OS,
-      scopes: AUTH_CONFIG.google.scopes
-    });
-
-    // Check if your device supports Google Play
-    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-    logger.info('Play Services check passed');
+    logger.info('Attempting Google sign in');
+    const auth = serviceManager.getAuthService().getAuth();
+    const provider = new GoogleAuthProvider();
+    provider.addScope('profile');
+    provider.addScope('email');
     
-    // Get the users ID token
-    const signInResult = await GoogleSignin.signIn();
-    const tokens = await GoogleSignin.getTokens();
-    logger.info('Google Sign-In completed', { 
-      hasIdToken: !!tokens.idToken
-    });
-
-    if (!tokens.idToken) {
-      const error = new Error('No ID token present in Google Sign-In result');
-      logger.error('Missing ID token', {
-        error: {
-          message: error.message,
-          name: error.name
-        }
-      });
-      throw error;
+    let result;
+    if (Platform.OS === 'web') {
+      result = await signInWithPopup(auth, provider);
+    } else {
+      await signInWithRedirect(auth, provider);
+      result = await getRedirectResult(auth);
     }
-    
-    // Create a Google credential with the token
-    const googleCredential = firebase.auth.GoogleAuthProvider.credential(tokens.idToken);
-    logger.info('Created Google credential');
 
-    // Sign-in the user with the credential
-    const userCredential = await auth.signInWithCredential(googleCredential);
-    logger.info('Firebase sign in successful', { 
-      userId: userCredential.user.uid,
-      isNewUser: userCredential.additionalUserInfo?.isNewUser
-    });
+    if (!result?.user) {
+      throw new Error('No user returned from Google sign in');
+    }
 
-    return { user: userCredential.user, error: null };
-  } catch (error: any) {
-    logger.error('Google sign in error', { 
-      error: {
-        code: error.code,
-        message: error.message,
-        name: error.name,
-        stack: error.stack,
-        nativeErrorCode: error.nativeErrorCode,
-        nativeErrorMessage: error.nativeErrorMessage
-      },
-      platform: Platform.OS
-    });
-
+    logger.info('Google sign in successful');
+    return {
+      user: result.user,
+      error: null
+    };
+  } catch (error) {
+    logger.error('Google sign in failed', { error });
     return {
       user: null,
-      error: {
-        code: error.code || 'unknown',
-        message: error.message || 'An unexpected error occurred during Google Sign-In',
-      },
+      error: getErrorDetails(error)
     };
   }
 };
 
 export const signOut = async (): Promise<AuthResponse> => {
-  logger.info('Starting sign out process');
   try {
-    await auth.signOut();
-    await GoogleSignin.signOut(); // Also sign out from Google
+    logger.info('Signing out');
+    const auth = serviceManager.getAuthService().getAuth();
+    await firebaseSignOut(auth);
     logger.info('Sign out successful');
-    return { user: null, error: null };
-  } catch (error: any) {
-    logger.error('Sign out error', { error });
     return {
       user: null,
-      error: {
-        code: error.code || 'unknown',
-        message: error.message || 'An unexpected error occurred',
-      },
+      error: null
+    };
+  } catch (error) {
+    logger.error('Sign out failed', { error });
+    return {
+      user: null,
+      error: getErrorDetails(error)
     };
   }
 };
 
-export const onAuthStateChanged = (callback: (user: FirebaseAuthTypes.User | null) => void) => {
-  logger.info('Setting up auth state listener');
-  return auth.onAuthStateChanged((user) => {
-    logger.info('Auth state changed', { userId: user?.uid });
-    callback(user);
-  });
+export const onAuthStateChanged = (callback: (user: User | null) => void) => {
+  const auth = serviceManager.getAuthService().getAuth();
+  return onFirebaseAuthStateChanged(auth, callback);
 }; 

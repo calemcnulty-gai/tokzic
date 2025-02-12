@@ -16,10 +16,6 @@ const getDevUrl = () => {
 };
 
 export const AUTH_CONFIG = {
-  google: {
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    scopes: ['profile', 'email'] as string[],
-  },
   emailLink: {
     // Use development URL in dev mode, production URL in prod
     url: isDev 
@@ -49,12 +45,6 @@ function validateConfig() {
     isDev,
     emailLinkUrl: AUTH_CONFIG.emailLink.url
   });
-
-  // Validate Google config
-  if (!AUTH_CONFIG.google.webClientId) {
-    logger.error('Missing required Google auth configuration');
-    throw new Error('Missing EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID environment variable');
-  }
 
   // Validate Email Link config
   const emailLinkConfig = AUTH_CONFIG.emailLink;

@@ -1,26 +1,23 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import { styled } from 'nativewind';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MainStackParamList } from './types';
 import { FeedScreen } from '../screens/feed/FeedScreen';
 import { useTheme } from '../theme/ThemeProvider';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
-const StyledView = styled(View);
-const StyledText = styled(Text);
 
 // Temporary placeholder screens
 const VideoDetailScreen = () => (
-  <StyledView className="flex-1 justify-center items-center bg-background-primary">
-    <StyledText className="text-text-primary">Video Detail</StyledText>
-  </StyledView>
+  <View className="flex-1 justify-center items-center bg-background-primary">
+    <Text className="text-text-primary">Video Detail</Text>
+  </View>
 );
 
 const SettingsScreen = () => (
-  <StyledView className="flex-1 justify-center items-center bg-background-primary">
-    <StyledText className="text-text-primary">Settings</StyledText>
-  </StyledView>
+  <View className="flex-1 justify-center items-center bg-background-primary">
+    <Text className="text-text-primary">Settings</Text>
+  </View>
 );
 
 export const MainStack = () => {
