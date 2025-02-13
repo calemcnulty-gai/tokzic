@@ -1,0 +1,153 @@
+[
+  {
+    "insertId": "67ad58b10005e826e8733d89",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://us-central1-tokzic-mobile.cloudfunctions.net/getRecommendations/",
+      "requestSize": "467",
+      "status": 500,
+      "responseSize": "299",
+      "userAgent": "tokzic/1 CFNetwork/1568.300.101 Darwin/24.0.0",
+      "remoteIp": "24.153.157.38",
+      "serverIp": "216.239.36.54",
+      "latency": "0.062930256s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "location": "us-central1",
+        "revision_name": "getrecommendations-00018-fic",
+        "configuration_name": "getrecommendations",
+        "project_id": "tokzic-mobile",
+        "service_name": "getrecommendations"
+      }
+    },
+    "timestamp": "2025-02-13T02:28:01.316746Z",
+    "severity": "ERROR",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00ca3695d2d97fe313f6233b7c538a950d6043e65cfe78a7149e2dce81ed261cda00e8a007910c36abc7b2f6d0c0d6545eceeb57d6dd0523f0cdca2f8e33bfa9761ef82fe9"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/tokzic-mobile/traces/1e72d8d38d360839acdb4f2b193f012b",
+    "receiveTimestamp": "2025-02-13T02:28:01.391581810Z",
+    "spanId": "0723e0974db8793b",
+    "traceSampled": true
+  },
+  {
+    "insertId": "67ad58b10005826fe7bc1d18",
+    "jsonPayload": {
+      "message": "Received recommendation request",
+      "query": {},
+      "body": {
+        "userId": "cLvbrXnkZUaEAUzmJ4CBXIJlLa93"
+      }
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "getrecommendations",
+        "location": "us-central1",
+        "configuration_name": "getrecommendations",
+        "revision_name": "getrecommendations-00018-fic",
+        "project_id": "tokzic-mobile"
+      }
+    },
+    "timestamp": "2025-02-13T02:28:01.361071Z",
+    "severity": "INFO",
+    "labels": {
+      "execution_id": "2pzu89g3lfc5",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00ca3695d2d97fe313f6233b7c538a950d6043e65cfe78a7149e2dce81ed261cda00e8a007910c36abc7b2f6d0c0d6545eceeb57d6dd0523f0cdca2f8e33bfa9761ef82fe9"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/1e72d8d38d360839acdb4f2b193f012b",
+    "receiveTimestamp": "2025-02-13T02:28:01.367924080Z",
+    "spanId": "514501722898987323"
+  },
+  {
+    "textPayload": "No value found for secret parameter \"PINECONE_API_KEY\". A function can only access a secret if you include the secret in the function's dependency array.",
+    "insertId": "67ad58b10005844c4a33642c",
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "configuration_name": "getrecommendations",
+        "service_name": "getrecommendations",
+        "project_id": "tokzic-mobile",
+        "revision_name": "getrecommendations-00018-fic",
+        "location": "us-central1"
+      }
+    },
+    "timestamp": "2025-02-13T02:28:01.361548Z",
+    "severity": "WARNING",
+    "labels": {
+      "instanceId": "00ca3695d2d97fe313f6233b7c538a950d6043e65cfe78a7149e2dce81ed261cda00e8a007910c36abc7b2f6d0c0d6545eceeb57d6dd0523f0cdca2f8e33bfa9761ef82fe9",
+      "execution_id": "2pzu89g3lfc5",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstderr",
+    "trace": "projects/tokzic-mobile/traces/1e72d8d38d360839acdb4f2b193f012b",
+    "receiveTimestamp": "2025-02-13T02:28:01.367624892Z",
+    "spanId": "514501722898987323"
+  },
+  {
+    "textPayload": "No value found for secret parameter \"PINECONE_API_KEY\". A function can only access a secret if you include the secret in the function's dependency array.",
+    "insertId": "67ad58b100058614b1779c33",
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "configuration_name": "getrecommendations",
+        "service_name": "getrecommendations",
+        "revision_name": "getrecommendations-00018-fic",
+        "location": "us-central1",
+        "project_id": "tokzic-mobile"
+      }
+    },
+    "timestamp": "2025-02-13T02:28:01.362004Z",
+    "severity": "WARNING",
+    "labels": {
+      "execution_id": "2pzu89g3lfc5",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00ca3695d2d97fe313f6233b7c538a950d6043e65cfe78a7149e2dce81ed261cda00e8a007910c36abc7b2f6d0c0d6545eceeb57d6dd0523f0cdca2f8e33bfa9761ef82fe9"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstderr",
+    "trace": "projects/tokzic-mobile/traces/1e72d8d38d360839acdb4f2b193f012b",
+    "receiveTimestamp": "2025-02-13T02:28:01.704830677Z",
+    "spanId": "514501722898987323"
+  },
+  {
+    "insertId": "67ad58b10005873faed675c1",
+    "jsonPayload": {
+      "pineconeInitialized": false,
+      "apiKeyPresent": false,
+      "message": "Error: Pinecone configuration error\n    at entryFromArgs (/workspace/node_modules/firebase-functions/lib/logger/index.js:133:19)\n    at Object.error (/workspace/node_modules/firebase-functions/lib/logger/index.js:120:11)\n    at /workspace/lib/recommendation.js:144:37\n    at Layer.handle [as handle_request] (/workspace/node_modules/express/lib/router/layer.js:95:5)\n    at next (/workspace/node_modules/express/lib/router/route.js:149:13)\n    at Route.dispatch (/workspace/node_modules/express/lib/router/route.js:119:3)\n    at Layer.handle [as handle_request] (/workspace/node_modules/express/lib/router/layer.js:95:5)\n    at /workspace/node_modules/express/lib/router/index.js:284:15\n    at Function.process_params (/workspace/node_modules/express/lib/router/index.js:346:12)\n    at next (/workspace/node_modules/express/lib/router/index.js:280:10)"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "configuration_name": "getrecommendations",
+        "revision_name": "getrecommendations-00018-fic",
+        "location": "us-central1",
+        "service_name": "getrecommendations",
+        "project_id": "tokzic-mobile"
+      }
+    },
+    "timestamp": "2025-02-13T02:28:01.362303Z",
+    "severity": "ERROR",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "execution_id": "2pzu89g3lfc5",
+      "instanceId": "00ca3695d2d97fe313f6233b7c538a950d6043e65cfe78a7149e2dce81ed261cda00e8a007910c36abc7b2f6d0c0d6545eceeb57d6dd0523f0cdca2f8e33bfa9761ef82fe9"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstderr",
+    "trace": "projects/tokzic-mobile/traces/1e72d8d38d360839acdb4f2b193f012b",
+    "receiveTimestamp": "2025-02-13T02:28:01.704830677Z",
+    "spanId": "514501722898987323",
+    "errorGroups": [
+      {
+        "id": "CMGM4c3hgfXEZQ"
+      }
+    ]
+  }
+]

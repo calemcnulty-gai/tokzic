@@ -1,0 +1,289 @@
+[
+  {
+    "insertId": "67ad73a90002c1dcdce532f8",
+    "jsonPayload": {
+      "message": "Processing request for user",
+      "userId": "cLvbrXnkZUaEAUzmJ4CBXIJlLa93"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "project_id": "tokzic-mobile",
+        "configuration_name": "getrecommendations",
+        "service_name": "getrecommendations",
+        "revision_name": "getrecommendations-00023-mah",
+        "location": "us-central1"
+      }
+    },
+    "timestamp": "2025-02-13T04:23:05.180700Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "00ca3695d25496710281d90ba5f954039e09e6df46dc9e06182f83a9561b7437a82490c7afc228047f149f7c44a3a4942b75a658b89c84acb2a32dfea348b993db97f3b2a3",
+      "execution_id": "2u3t92l5epqi",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/3db9f6c42db30b7db792d5fac7f2afc3",
+    "receiveTimestamp": "2025-02-13T04:23:05.516880885Z",
+    "spanId": "15162420851055111936"
+  },
+  {
+    "insertId": "67ad73a90002c2190fa8ef49",
+    "jsonPayload": {
+      "message": "Querying Firestore for user swipes",
+      "userId": "cLvbrXnkZUaEAUzmJ4CBXIJlLa93"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "revision_name": "getrecommendations-00023-mah",
+        "project_id": "tokzic-mobile",
+        "location": "us-central1",
+        "service_name": "getrecommendations",
+        "configuration_name": "getrecommendations"
+      }
+    },
+    "timestamp": "2025-02-13T04:23:05.180761Z",
+    "severity": "INFO",
+    "labels": {
+      "execution_id": "2u3t92l5epqi",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00ca3695d25496710281d90ba5f954039e09e6df46dc9e06182f83a9561b7437a82490c7afc228047f149f7c44a3a4942b75a658b89c84acb2a32dfea348b993db97f3b2a3"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/3db9f6c42db30b7db792d5fac7f2afc3",
+    "receiveTimestamp": "2025-02-13T04:23:05.516880885Z",
+    "spanId": "15162420851055111936"
+  },
+  {
+    "insertId": "67ad73aa00011cfd6e18505d",
+    "jsonPayload": {
+      "message": "Found swipes for user",
+      "swipeCount": 72,
+      "userId": "cLvbrXnkZUaEAUzmJ4CBXIJlLa93"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "location": "us-central1",
+        "configuration_name": "getrecommendations",
+        "project_id": "tokzic-mobile",
+        "revision_name": "getrecommendations-00023-mah",
+        "service_name": "getrecommendations"
+      }
+    },
+    "timestamp": "2025-02-13T04:23:06.072957Z",
+    "severity": "INFO",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "execution_id": "2u3t92l5epqi",
+      "instanceId": "00ca3695d25496710281d90ba5f954039e09e6df46dc9e06182f83a9561b7437a82490c7afc228047f149f7c44a3a4942b75a658b89c84acb2a32dfea348b993db97f3b2a3"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/3db9f6c42db30b7db792d5fac7f2afc3",
+    "receiveTimestamp": "2025-02-13T04:23:06.182799250Z",
+    "spanId": "15162420851055111936"
+  },
+  {
+    "insertId": "67ad73aa000121b7572fad7b",
+    "jsonPayload": {
+      "uniqueVideoCount": 8,
+      "message": "Processed swipes into weights",
+      "weights": {
+        "mixkit-dog-sitting-on-log-1550-hd-ready.mp4": 9,
+        "mixkit-white-cat-lying-among-the-grasses-seen-up-close-22732-hd-ready.mp4": -9,
+        "100496-video-720.mp4": -9,
+        "mixkit-smiling-dog-1552-hd-ready.mp4": 9,
+        "mixkit-dachshund-dog-while-hands-caress-it-10361-hd-ready.mp4": 7,
+        "mixkit-parrots-on-a-branch-in-a-nature-reserve-4649-hd-ready.mp4": -9,
+        "mixkit-white-blue-eyed-cat-1538-hd-ready.mp4": -7,
+        "100287-video-720.mp4": -9
+      }
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "revision_name": "getrecommendations-00023-mah",
+        "service_name": "getrecommendations",
+        "location": "us-central1",
+        "configuration_name": "getrecommendations",
+        "project_id": "tokzic-mobile"
+      }
+    },
+    "timestamp": "2025-02-13T04:23:06.074167Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "00ca3695d25496710281d90ba5f954039e09e6df46dc9e06182f83a9561b7437a82490c7afc228047f149f7c44a3a4942b75a658b89c84acb2a32dfea348b993db97f3b2a3",
+      "goog-managed-by": "cloudfunctions",
+      "execution_id": "2u3t92l5epqi"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/3db9f6c42db30b7db792d5fac7f2afc3",
+    "receiveTimestamp": "2025-02-13T04:23:06.182799250Z",
+    "spanId": "15162420851055111936"
+  },
+  {
+    "insertId": "67ad73aa000121e635d1837e",
+    "jsonPayload": {
+      "videoCount": 8,
+      "message": "Fetching vectors from Pinecone"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "project_id": "tokzic-mobile",
+        "configuration_name": "getrecommendations",
+        "revision_name": "getrecommendations-00023-mah",
+        "location": "us-central1",
+        "service_name": "getrecommendations"
+      }
+    },
+    "timestamp": "2025-02-13T04:23:06.074214Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "00ca3695d25496710281d90ba5f954039e09e6df46dc9e06182f83a9561b7437a82490c7afc228047f149f7c44a3a4942b75a658b89c84acb2a32dfea348b993db97f3b2a3",
+      "execution_id": "2u3t92l5epqi",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/3db9f6c42db30b7db792d5fac7f2afc3",
+    "receiveTimestamp": "2025-02-13T04:23:06.182799250Z",
+    "spanId": "15162420851055111936"
+  },
+  {
+    "insertId": "67ad73aa000885adc52bb682",
+    "jsonPayload": {
+      "message": "Received Pinecone fetch response",
+      "fetchedRecordsCount": 8,
+      "hasRecords": true
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "project_id": "tokzic-mobile",
+        "configuration_name": "getrecommendations",
+        "service_name": "getrecommendations",
+        "location": "us-central1",
+        "revision_name": "getrecommendations-00023-mah"
+      }
+    },
+    "timestamp": "2025-02-13T04:23:06.558509Z",
+    "severity": "INFO",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00ca3695d25496710281d90ba5f954039e09e6df46dc9e06182f83a9561b7437a82490c7afc228047f149f7c44a3a4942b75a658b89c84acb2a32dfea348b993db97f3b2a3",
+      "execution_id": "2u3t92l5epqi"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/3db9f6c42db30b7db792d5fac7f2afc3",
+    "receiveTimestamp": "2025-02-13T04:23:06.848802722Z",
+    "spanId": "15162420851055111936"
+  },
+  {
+    "textPayload": "Computing aggregated user vector",
+    "insertId": "67ad73aa000885e7bd772082",
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "project_id": "tokzic-mobile",
+        "location": "us-central1",
+        "revision_name": "getrecommendations-00023-mah",
+        "service_name": "getrecommendations",
+        "configuration_name": "getrecommendations"
+      }
+    },
+    "timestamp": "2025-02-13T04:23:06.558567Z",
+    "severity": "INFO",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "execution_id": "2u3t92l5epqi",
+      "instanceId": "00ca3695d25496710281d90ba5f954039e09e6df46dc9e06182f83a9561b7437a82490c7afc228047f149f7c44a3a4942b75a658b89c84acb2a32dfea348b993db97f3b2a3"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/3db9f6c42db30b7db792d5fac7f2afc3",
+    "receiveTimestamp": "2025-02-13T04:23:06.848802722Z",
+    "spanId": "15162420851055111936"
+  },
+  {
+    "insertId": "67ad73aa000891b761244ebb",
+    "jsonPayload": {
+      "message": "Computed user vector",
+      "validVectorsProcessed": 8,
+      "totalVectors": 8
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "configuration_name": "getrecommendations",
+        "project_id": "tokzic-mobile",
+        "service_name": "getrecommendations",
+        "revision_name": "getrecommendations-00023-mah",
+        "location": "us-central1"
+      }
+    },
+    "timestamp": "2025-02-13T04:23:06.561591Z",
+    "severity": "INFO",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00ca3695d25496710281d90ba5f954039e09e6df46dc9e06182f83a9561b7437a82490c7afc228047f149f7c44a3a4942b75a658b89c84acb2a32dfea348b993db97f3b2a3",
+      "execution_id": "2u3t92l5epqi"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/3db9f6c42db30b7db792d5fac7f2afc3",
+    "receiveTimestamp": "2025-02-13T04:23:06.848802722Z",
+    "spanId": "15162420851055111936"
+  },
+  {
+    "textPayload": "Querying Pinecone for recommendations",
+    "insertId": "67ad73aa000891e153191c0d",
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "location": "us-central1",
+        "revision_name": "getrecommendations-00023-mah",
+        "service_name": "getrecommendations",
+        "project_id": "tokzic-mobile",
+        "configuration_name": "getrecommendations"
+      }
+    },
+    "timestamp": "2025-02-13T04:23:06.561633Z",
+    "severity": "INFO",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00ca3695d25496710281d90ba5f954039e09e6df46dc9e06182f83a9561b7437a82490c7afc228047f149f7c44a3a4942b75a658b89c84acb2a32dfea348b993db97f3b2a3",
+      "execution_id": "2u3t92l5epqi"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/3db9f6c42db30b7db792d5fac7f2afc3",
+    "receiveTimestamp": "2025-02-13T04:23:06.848802722Z",
+    "spanId": "15162420851055111936"
+  },
+  {
+    "insertId": "67ad73aa0009a67086d7e9a3",
+    "jsonPayload": {
+      "message": "Received recommendation results",
+      "matchCount": 8
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "getrecommendations",
+        "project_id": "tokzic-mobile",
+        "configuration_name": "getrecommendations",
+        "revision_name": "getrecommendations-00023-mah",
+        "location": "us-central1"
+      }
+    },
+    "timestamp": "2025-02-13T04:23:06.632432Z",
+    "severity": "INFO",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00ca3695d25496710281d90ba5f954039e09e6df46dc9e06182f83a9561b7437a82490c7afc228047f149f7c44a3a4942b75a658b89c84acb2a32dfea348b993db97f3b2a3",
+      "execution_id": "2u3t92l5epqi"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/3db9f6c42db30b7db792d5fac7f2afc3",
+    "receiveTimestamp": "2025-02-13T04:23:06.848802722Z",
+    "spanId": "15162420851055111936"
+  }
+]

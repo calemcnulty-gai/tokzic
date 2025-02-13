@@ -12,6 +12,8 @@ import {
   selectPlaybackState,
 } from '../store/slices/videoSlice';
 import { createAction } from '@reduxjs/toolkit';
+import { MaterialIcons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 
 const logger = createLogger('VideoPlayer');
 const { width, height } = Dimensions.get('window');
@@ -28,6 +30,7 @@ export const VideoPlayer = memo(function VideoPlayer({ video, metadata, shouldPl
   const videoRef = useRef<Video | null>(null);
   const isMounted = useRef(true);
   const dispatch = useAppDispatch();
+  const { isPlaying } = useAppSelector(state => state.video.player);
 
   // Cleanup on unmount
   React.useEffect(() => {
@@ -45,17 +48,6 @@ export const VideoPlayer = memo(function VideoPlayer({ video, metadata, shouldPl
       }
     };
   }, [video.id]);
-
-  // Get playback state from Redux
-  const { isPlaying, isBuffering } = useAppSelector(state => state.video.player);
-
-  logger.debug('VideoPlayer render', {
-    videoId: video.id,
-    url: video.url,
-    shouldPlay,
-    isPlaying,
-    isBuffering
-  });
 
   const handlePlaybackStatusUpdate = useCallback((status: AVPlaybackStatus) => {
     if (!isMounted.current) return;
@@ -145,6 +137,11 @@ export const VideoPlayer = memo(function VideoPlayer({ video, metadata, shouldPl
             });
           }}
         />
+        {!isPlaying && (
+          <BlurView intensity={30} style={styles.playButtonContainer}>
+            <MaterialIcons name="play-circle-outline" size={80} color="rgba(255, 255, 255, 0.8)" />
+          </BlurView>
+        )}
       </View>
     </TouchableWithoutFeedback>
   );
@@ -163,5 +160,15 @@ const styles = StyleSheet.create({
   },
   video: {
     flex: 1,
+  },
+  playButtonContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
   },
 }); 

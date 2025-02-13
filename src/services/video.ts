@@ -144,8 +144,9 @@ class VideoService {
   }
 
   async fetchVideoById(videoId: string): Promise<VideoWithMetadata> {
-    const { firestoreService } = this.getFirebaseServices();
+    const { firestoreService, storageService } = this.getFirebaseServices();
     const db = firestoreService['db'];
+    const storage = storageService['storage'];
 
     try {
       const videoRef = doc(db, VIDEOS_COLLECTION, videoId);
@@ -156,16 +157,48 @@ class VideoService {
       }
 
       const data = videoDoc.data();
+      logger.debug('Processing video document', {
+        docId: videoId,
+        rawData: data,
+        hasStoragePath: !!data.storagePath,
+        storagePath: data.storagePath,
+        metadata: data.metadata
+      });
+
+      const storagePath = data.storagePath || `videos/${videoId}`;
+      const storageRef = ref(storage, storagePath);
+      
+      logger.debug('Fetching video URL', {
+        docId: videoId,
+        storagePath,
+        refFullPath: storageRef.fullPath
+      });
+
+      const url = await getDownloadURL(storageRef);
+      
+      logger.debug('Got video URL', {
+        docId: videoId,
+        url,
+        hasUrl: !!url
+      });
+
       return {
         video: {
-          id: videoDoc.id,
-          url: data.url,
-          createdAt: data.createdAt
+          id: videoId,
+          url,
+          createdAt: data.createdAt || Date.now(),
         },
-        metadata: data.metadata
-      } as VideoWithMetadata;
+        metadata: data.metadata || {},
+      };
     } catch (error) {
-      logger.error('Failed to fetch video by id', { videoId, error });
+      logger.error('Failed to fetch video by id', { 
+        videoId, 
+        error: error instanceof Error ? {
+          message: error.message,
+          name: error.name,
+          stack: error.stack
+        } : error 
+      });
       throw error;
     }
   }

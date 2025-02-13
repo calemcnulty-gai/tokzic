@@ -1,0 +1,161 @@
+import { createAsyncThunk } from '@reduxjs/toolkit';
+import { createLogger } from '../../../../utils/logger';
+import type { 
+  Comment, 
+  Like, 
+  Dislike, 
+  Tip,
+  VideoMetadata 
+} from '../../../../types/firestore';
+import type { ThunkConfig } from '../../../types';
+import type { GetState } from '../../../types';
+
+const logger = createLogger('FirestoreThunks');
+
+// Generic document operations
+export const fetchDocument = createAsyncThunk<any, { collectionName: string; documentId: string }, ThunkConfig>(
+  'firebase/firestore/fetchDocument',
+  async ({ collectionName, documentId }, { getState }: { getState: GetState }) => {
+    const { firestoreService } = getState().firebase;
+
+    if (!firestoreService) {
+      throw new Error('Firestore service not initialized');
+    }
+
+    return firestoreService.fetchDocument(collectionName, documentId);
+  }
+);
+
+export const updateDocument = createAsyncThunk<void, { collectionName: string; documentId: string; data: any }, ThunkConfig>(
+  'firebase/firestore/updateDocument',
+  async ({ collectionName, documentId, data }, { getState }: { getState: GetState }) => {
+    const { firestoreService } = getState().firebase;
+
+    if (!firestoreService) {
+      throw new Error('Firestore service not initialized');
+    }
+
+    await firestoreService.updateDocument(collectionName, documentId, data);
+  }
+);
+
+export const deleteDocument = createAsyncThunk<void, { collectionName: string; documentId: string }, ThunkConfig>(
+  'firebase/firestore/deleteDocument',
+  async ({ collectionName, documentId }, { getState }: { getState: GetState }) => {
+    const { firestoreService } = getState().firebase;
+
+    if (!firestoreService) {
+      throw new Error('Firestore service not initialized');
+    }
+
+    await firestoreService.deleteDocument(collectionName, documentId);
+  }
+);
+
+// Video-specific operations
+export const fetchVideoMetadata = createAsyncThunk<VideoMetadata | null, string, ThunkConfig>(
+  'firebase/firestore/fetchVideoMetadata',
+  async (videoId, { getState }: { getState: GetState }) => {
+    const { firestoreService } = getState().firebase;
+
+    if (!firestoreService) {
+      throw new Error('Firestore service not initialized');
+    }
+
+    return firestoreService.fetchVideoMetadata(videoId);
+  }
+);
+
+export const updateVideoMetadata = createAsyncThunk<void, { videoId: string; updates: Partial<Omit<VideoMetadata, 'id'>> }, ThunkConfig>(
+  'firebase/firestore/updateVideoMetadata',
+  async ({ videoId, updates }, { getState }: { getState: GetState }) => {
+    const { firestoreService } = getState().firebase;
+
+    if (!firestoreService) {
+      throw new Error('Firestore service not initialized');
+    }
+
+    await firestoreService.updateVideoMetadata(videoId, updates);
+  }
+);
+
+// Comment operations
+export const fetchVideoComments = createAsyncThunk<Comment[], string, ThunkConfig>(
+  'firebase/firestore/fetchVideoComments',
+  async (videoId, { getState }: { getState: GetState }) => {
+    const { firestoreService } = getState().firebase;
+
+    if (!firestoreService) {
+      throw new Error('Firestore service not initialized');
+    }
+
+    return firestoreService.fetchVideoComments(videoId);
+  }
+);
+
+export const addComment = createAsyncThunk<Comment, Omit<Comment, 'id'>, ThunkConfig>(
+  'firebase/firestore/addComment',
+  async (comment, { getState }: { getState: GetState }) => {
+    const { firestoreService } = getState().firebase;
+
+    if (!firestoreService) {
+      throw new Error('Firestore service not initialized');
+    }
+
+    return firestoreService.addComment(comment);
+  }
+);
+
+// Like operations
+export const fetchVideoLikes = createAsyncThunk<Like[], string, ThunkConfig>(
+  'firebase/firestore/fetchVideoLikes',
+  async (videoId, { getState }: { getState: GetState }) => {
+    const { firestoreService } = getState().firebase;
+
+    if (!firestoreService) {
+      throw new Error('Firestore service not initialized');
+    }
+
+    return firestoreService.fetchVideoLikes(videoId);
+  }
+);
+
+export const toggleLike = createAsyncThunk<{ action: 'add' | 'remove'; like?: Like; likeId?: string }, { videoId: string; userId: string; type?: 'like' | 'superLike' }, ThunkConfig>(
+  'firebase/firestore/toggleLike',
+  async ({ videoId, userId, type = 'like' }, { getState }: { getState: GetState }) => {
+    const { firestoreService } = getState().firebase;
+
+    if (!firestoreService) {
+      throw new Error('Firestore service not initialized');
+    }
+
+    return firestoreService.toggleLike(videoId, userId, type);
+  }
+);
+
+// Tip operations
+export const fetchVideoTips = createAsyncThunk<Tip[], string, ThunkConfig>(
+  'firebase/firestore/fetchVideoTips',
+  async (videoId, { getState }: { getState: GetState }) => {
+    const { firestoreService } = getState().firebase;
+
+    if (!firestoreService) {
+      throw new Error('Firestore service not initialized');
+    }
+
+    return firestoreService.fetchVideoTips(videoId);
+  }
+);
+
+export const addTip = createAsyncThunk<Tip, Omit<Tip, 'id'>, ThunkConfig>(
+  'firebase/firestore/addTip',
+  async (tip, { getState }: { getState: GetState }) => {
+    const { firestoreService } = getState().firebase;
+
+    if (!firestoreService) {
+      throw new Error('Firestore service not initialized');
+    }
+
+    return firestoreService.addTip(tip);
+  }
+); 

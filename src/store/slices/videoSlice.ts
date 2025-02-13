@@ -4,6 +4,7 @@ import { VideoWithMetadata } from '../../types/video';
 import { VideoMetadata, Comment } from '../../types/firestore';
 import { createLogger } from '../../utils/logger';
 import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import { videoCacheManager } from '../../services/video-cache';
 import { 
   fetchVideoMetadata as fetchVideoMetadataThunk,
   fetchVideoComments as fetchVideoCommentsThunk,
@@ -187,33 +188,128 @@ export const initializeVideoBuffer = createAsyncThunk(
 // Unified rotation with pagination and buffer management
 export const rotateForward = createAsyncThunk(
   'video/rotateForward',
-  async (_, { getState }) => {
+  async (_, { getState, dispatch }) => {
     const state = getState() as { video: VideoState };
-    const { videos, currentIndex, isAtEnd, lastVisible } = state.video;
+    const { videos, currentIndex, lastVisible } = state.video;
+    const user = selectUser(getState() as RootState);
 
     logger.info('Attempting to rotate forward', {
       currentIndex,
       totalVideos: videos.length,
-      isAtEnd,
       hasLastVisible: !!lastVisible,
       currentVideoId: videos[currentIndex]?.video?.id,
       nextVideoId: videos[currentIndex + 1]?.video?.id
     });
 
-    if (isAtEnd) {
-      logger.warn('Cannot rotate forward - at end of feed');
-      return null;
-    }
-
     try {
+      // If we're at the last video, fetch recommendations
+      if (currentIndex === videos.length - 1) {
+        logger.info('At last video, fetching recommendations', {
+          currentIndex,
+          totalVideos: videos.length,
+          userId: user?.uid
+        });
+
+        if (!user?.uid) {
+          logger.warn('No user ID available for recommendations');
+          return { type: 'loop' }; // Fallback to loop if no user
+        }
+
+        try {
+          // Call the recommendation endpoint with timeout and error handling
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+          const response = await fetch(`${process.env.FIREBASE_FUNCTIONS_URL}/getRecommendations/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: user.uid,
+            }),
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            logger.error('Failed to get recommendations', {
+              status: response.status,
+              statusText: response.statusText
+            });
+            return { type: 'loop' }; // Fallback to loop if request fails
+          }
+
+          const data = await response.json();
+          if (!data.recommendations || !data.recommendations.length) {
+            logger.warn('No recommendations received');
+            return { type: 'loop' }; // Fallback to loop if no recommendations
+          }
+
+          logger.info('Successfully fetched recommended video IDs', {
+            recommendedCount: data.recommendations.length,
+            firstVideoId: data.recommendations[0]
+          });
+
+          // Fetch the actual videos for the recommended IDs
+          const recommendedVideos = await Promise.all(
+            data.recommendations.map(async (videoId: string) => {
+              try {
+                // Use the video service to fetch each video, which will handle all initialization
+                const video = await videoService.fetchVideoById(videoId);
+                
+                // Initialize video interactions state
+                if (!state.video.interactions[videoId]) {
+                  dispatch(initializeVideoInteractions({ videoId }));
+                }
+                
+                // Preload the video
+                if (video.video.url) {
+                  void videoCacheManager.preloadVideo(video.video);
+                }
+                
+                return video;
+              } catch (error) {
+                logger.error('Failed to fetch recommended video', {
+                  videoId,
+                  error
+                });
+                return null;
+              }
+            })
+          );
+
+          const validVideos = recommendedVideos.filter((v): v is VideoWithMetadata => v !== null);
+
+          if (!validVideos.length) {
+            logger.warn('No valid recommended videos found');
+            return { type: 'loop' }; // Fallback to loop if no valid videos
+          }
+
+          logger.info('Successfully fetched recommended videos', {
+            recommendedCount: validVideos.length,
+            firstVideoId: validVideos[0]?.video?.id
+          });
+
+          return {
+            type: 'replace',
+            videos: validVideos
+          };
+        } catch (error) {
+          logger.error('Failed to get recommendations, falling back to loop', { error });
+          return { type: 'loop' }; // Fallback to loop on any error
+        }
+      }
+
       // If we're near the end of our buffer, fetch more videos
       if (currentIndex >= videos.length - 2) {
         if (!lastVisible) {
-          logger.warn('No lastVisible document for pagination', {
+          logger.info('No more pagination cursor, continuing with existing videos', {
             currentIndex,
             videosLength: videos.length
           });
-          return { isAtEnd: true };
+          return { type: 'increment' };
         }
         
         logger.info('Fetching more videos for forward rotation', {
@@ -224,11 +320,11 @@ export const rotateForward = createAsyncThunk(
         const result = await videoService.fetchVideos(VIDEOS_PER_PAGE, lastVisible);
         
         if (result.videos.length === 0) {
-          logger.warn('No more videos available', {
+          logger.info('No more new videos available, continuing with existing', {
             currentIndex,
             totalExisting: videos.length
           });
-          return { isAtEnd: true };
+          return { type: 'increment' };
         }
 
         logger.info('Successfully fetched more videos', {
@@ -273,19 +369,33 @@ export const rotateBackward = createAsyncThunk(
   'video/rotateBackward',
   async (_, { getState }) => {
     const state = getState() as { video: VideoState };
-    const { currentIndex, isAtStart, videos } = state.video;
+    const { currentIndex, videos } = state.video;
 
-    if (isAtStart || currentIndex <= 0) return null;
+    logger.info('Attempting to rotate backward', {
+      currentIndex,
+      totalVideos: videos.length
+    });
 
     try {
+      // If we're at the first video, loop to end
+      if (currentIndex === 0) {
+        logger.info('At first video, looping to end', {
+          totalVideos: videos.length
+        });
+        return { type: 'loop_end' };
+      }
+
       // If we're near the start of our buffer, fetch previous videos
-      if (currentIndex <= 2 && !isAtStart) {
+      if (currentIndex <= 2) {
         const firstVideo = videos[0].video;
         logger.info('Fetching previous videos for backward rotation');
         const prevVideos = await videoService.fetchVideosBefore(VIDEOS_PER_PAGE, firstVideo.id);
         
         if (prevVideos.length === 0) {
-          return { isAtStart: true };
+          logger.info('No previous videos available, continuing with existing', {
+            currentIndex
+          });
+          return { type: 'decrement' };
         }
 
         return {
@@ -353,15 +463,22 @@ export const handleSwipeGesture = createAsyncThunk(
           currentIndex: state.video.currentIndex,
           gestureTimestamp: gestureState.lastGestureTimestamp
         });
+        // Record the swipe first
         await createSwipe(currentVideo.video.id, direction);
         logger.info('Recorded swipe', {
           videoId: currentVideo.video.id,
           direction,
           duration: Date.now() - gestureState.lastGestureTimestamp
         });
-      }
-
-      if (direction === 'up') {
+        
+        // Then rotate to next video
+        await dispatch(rotateForward()).unwrap();
+        logger.info('Completed forward rotation after horizontal swipe', {
+          newIndex: (getState() as RootState).video.currentIndex,
+          duration: Date.now() - gestureState.lastGestureTimestamp,
+          success: true
+        });
+      } else if (direction === 'up') {
         logger.debug('Processing vertical swipe up', {
           currentIndex: state.video.currentIndex,
           videoId: currentVideo.video.id,
@@ -653,9 +770,33 @@ const videoSlice = createSlice({
           return;
         }
 
-        if (action.payload.isAtEnd) {
-          logger.info('Reached end of feed');
-          state.isAtEnd = true;
+        if (action.payload.type === 'loop') {
+          logger.info('Looping back to start of feed');
+          state.currentIndex = 0;
+          state.currentVideo = state.videos[0];
+          state.isAtEnd = false;
+          state.player.isPlaying = true;
+          state.player.position = 0;
+        } else if (action.payload.type === 'replace' && action.payload.videos) {
+          logger.info('Replacing feed with recommended videos', {
+            newVideoCount: action.payload.videos.length
+          });
+          
+          // Update loading states for the new videos
+          state.loadingStates.metadata = { isLoading: false, isLoaded: true, error: null };
+          state.loadingStates.video = { isLoading: false, isLoaded: true, error: null };
+          state.loadingStates.comments = { isLoading: false, isLoaded: false, error: null };
+          state.loadingStates.likes = { isLoading: false, isLoaded: false, error: null };
+          state.loadingStates.tips = { isLoading: false, isLoaded: false, error: null };
+          
+          state.videos = action.payload.videos;
+          state.currentIndex = 0;
+          state.currentVideo = state.videos[0];
+          state.isAtEnd = false;
+          state.player.isPlaying = true;
+          state.player.position = 0;
+          state.isVideosLoaded = true;
+          state.isMetadataLoaded = true;
         } else if (action.payload.type === 'append' && action.payload.videos) {
           logger.info('Appending new videos', {
             newVideos: action.payload.videos.map(v => ({
@@ -671,7 +812,6 @@ const videoSlice = createSlice({
           }
           state.currentIndex++;
           state.currentVideo = state.videos[state.currentIndex];
-          // Reset player state for new video
           state.player.isPlaying = true;
           state.player.position = 0;
         } else if (action.payload.type === 'increment') {
@@ -683,7 +823,6 @@ const videoSlice = createSlice({
           state.currentIndex++;
           state.isAtStart = false;
           state.currentVideo = state.videos[state.currentIndex];
-          // Reset player state for new video
           state.player.isPlaying = true;
           state.player.position = 0;
         }
@@ -710,14 +849,28 @@ const videoSlice = createSlice({
         
         if (!action.payload) return;
 
-        if (action.payload.isAtStart) {
-          state.isAtStart = true;
+        if (action.payload.type === 'loop_end') {
+          logger.info('Looping to end of feed');
+          state.currentIndex = state.videos.length - 1;
+          state.currentVideo = state.videos[state.currentIndex];
+          state.isAtStart = false;
+          // Reset player state for new video
+          state.player.isPlaying = true;
+          state.player.position = 0;
         } else if (action.payload.type === 'prepend' && action.payload.videos) {
           state.videos.unshift(...action.payload.videos);
           state.currentIndex += action.payload.videos.length;
+          state.currentVideo = state.videos[state.currentIndex];
+          // Reset player state for new video
+          state.player.isPlaying = true;
+          state.player.position = 0;
         } else if (action.payload.type === 'decrement') {
           state.currentIndex--;
           state.isAtEnd = false;
+          state.currentVideo = state.videos[state.currentIndex];
+          // Reset player state for new video
+          state.player.isPlaying = true;
+          state.player.position = 0;
         }
       })
       .addCase(rotateBackward.rejected, (state, action) => {
