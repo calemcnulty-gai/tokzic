@@ -131,37 +131,44 @@ async function getEmbeddingForText(text: string): Promise<number[]> {
  */
 app.post("/", async (req: Request, res: Response) => {
   // Log configuration at startup
-  logger.info("Generation service configuration loaded", {
+  logger.info("[generationWebhook] Generation service configuration loaded", {
     openAiModel: OPENAI_EMBEDDING_MODEL,
     pineconeIndex: PINECONE_INDEX,
     hasSecrets: !!OPENAI_API_KEY && !!PINECONE_API_KEY,
   });
 
-  logger.info("Received Replicate webhook callback", { body: req.body });
+  logger.info("[generationWebhook] Received Replicate webhook callback", { body: req.body });
 
   try {
     const payload = req.body as ReplicateWebhookPayload;
+    const prompt = req.query.prompt as string;
 
     // Validate webhook payload
     if (!payload.id) {
-      logger.warn("Missing replicate ID in payload");
+      logger.warn("[generationWebhook] Missing replicate ID in payload");
       res.status(400).json({ error: "Missing replicate ID in payload" });
       return;
     }
 
+    if (!prompt) {
+      logger.warn("[generationWebhook] Missing prompt in query parameters");
+      res.status(400).json({ error: "Missing prompt parameter" });
+      return;
+    }
+
     // Send starting status if generation is starting
-    if (payload.status === 'starting') {
-      logger.info("Generation starting", { id: payload.id });
+    if (payload.status === "starting") {
+      logger.info("[generationWebhook] Generation starting", { id: payload.id });
       res.status(200).json({
         message: "Generation starting",
         id: payload.id,
-        status: 'starting'
+        status: "starting",
       });
       return;
     }
 
     if (payload.status !== "succeeded") {
-      logger.info("Generation status update", {
+      logger.info("[generationWebhook] Generation status update", {
         status: payload.status,
         error: payload.error,
       });
@@ -189,7 +196,7 @@ app.post("/", async (req: Request, res: Response) => {
 
     // Download and process the video
     const fileName = `${payload.id}.mp4`;
-    logger.info("Downloading video", { url: videoOutputUrl });
+    logger.info("[generationWebhook] Downloading video", { url: videoOutputUrl });
 
     const videoResponse = await fetch(videoOutputUrl);
     if (!videoResponse.ok) {
@@ -203,29 +210,32 @@ app.post("/", async (req: Request, res: Response) => {
       throw new Error(`Video file too large: ${fileSizeMB.toFixed(2)}MB`);
     }
 
-    logger.info("Video downloaded", {
+    logger.info("[generationWebhook] Video downloaded", {
       size: videoBuffer.length,
       sizeMB: fileSizeMB.toFixed(2),
     });
 
     // Upload to Firebase Storage
-    const file = bucket.file(`generated_videos/${fileName}`);
+    const file = bucket.file(`videos/${fileName}`);
     await file.save(videoBuffer, {
       contentType: "video/mp4",
       resumable: false,
     });
 
-    const videoUrl = `https://storage.googleapis.com/${bucket.name}/generated_videos/${fileName}`;
-    logger.info("Video uploaded", { videoUrl });
+    const videoUrl = `https://storage.googleapis.com/${bucket.name}/videos/${fileName}`;
+    logger.info("[generationWebhook] Video uploaded", { videoUrl });
 
     // Create video document
     const videoDoc = {
       id: fileName,
-      description: payload.prompt,
+      description: prompt,
       creatorId: "system",
       username: "System",
       avatarUrl: null,
       title: fileName.replace(".mp4", ""),
+      url: videoUrl,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
       stats: {
         comments: 0,
         dislikes: 0,
@@ -237,34 +247,34 @@ app.post("/", async (req: Request, res: Response) => {
     };
 
     await db.collection("videos").doc(fileName).set(videoDoc);
-    logger.info("Created video document", { videoId: fileName });
+    logger.info("[generationWebhook] Created video document", { videoId: fileName });
 
     // Update Pinecone index with the video's embedding
     if (!initializePinecone() || !index) {
-      logger.error("Failed to initialize Pinecone");
+      logger.error("[generationWebhook] Failed to initialize Pinecone");
     } else {
       try {
         // Generate embedding for the prompt
-        const embedding = await getEmbeddingForText(payload.prompt);
-        
+        const embedding = await getEmbeddingForText(prompt);
+
         // Upsert the embedding to Pinecone
         await index.upsert([{
           id: fileName,
           values: embedding,
           metadata: {
-            description: payload.prompt,
-            isGenerated: true, // Mark as generated content
-            timestamp: Date.now()
+            description: prompt,
+            isGenerated: true,
+            timestamp: Date.now(),
           },
         }]);
-        
-        logger.info("Updated Pinecone index", {
+
+        logger.info("[generationWebhook] Updated Pinecone index", {
           vectorId: fileName,
-          description: payload.prompt,
-          embeddingLength: embedding.length
+          description: prompt,
+          embeddingLength: embedding.length,
         });
       } catch (error) {
-        logger.error("Failed to update Pinecone index", {
+        logger.error("[generationWebhook] Failed to update Pinecone index", {
           error: error instanceof Error ? error.message : "Unknown error",
           stack: error instanceof Error ? error.stack : undefined,
         });
@@ -279,7 +289,7 @@ app.post("/", async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    logger.error("Error in webhook processing:", {
+    logger.error("[generationWebhook] Error in webhook processing:", {
       error: errorMessage,
       stack: error instanceof Error ? error.stack : undefined,
     });

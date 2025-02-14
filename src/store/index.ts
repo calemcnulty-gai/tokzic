@@ -11,7 +11,9 @@ import firebaseReducer from './slices/firebase/firebaseSlice';
 // performance monitoring and analytics. See /src/store/middleware/performanceMiddleware.ts
 // import { performanceMiddleware } from './middleware/performanceMiddleware';
 import { loggingMiddleware } from './middleware/loggingMiddleware';
+import { generationMiddleware } from './middleware/generationMiddleware';
 import { createLogger } from '../utils/logger';
+import { initializeGenerationService } from '../services/generation';
 
 const logger = createLogger('Store');
 
@@ -65,9 +67,12 @@ const store = configureStore({
       thunk: {
         extraArgument: undefined,
       },
-    }).concat(loggingMiddleware),
+    }).concat(loggingMiddleware, generationMiddleware),
   devTools: process.env.NODE_ENV === 'development',
 });
+
+// Initialize services that need store access
+initializeGenerationService(store.dispatch);
 
 // Export types
 export type RootState = ReturnType<typeof store.getState>;

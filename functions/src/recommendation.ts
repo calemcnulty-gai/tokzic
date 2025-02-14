@@ -32,7 +32,7 @@ const PINECONE_INDEX = "tokzic";
 const VECTOR_DIM = 1536;
 
 // Log configuration at startup
-logger.info("Pinecone configuration loaded:", {
+logger.info("[recommendation] Pinecone configuration loaded:", {
   index: PINECONE_INDEX,
 });
 
@@ -52,7 +52,7 @@ function initializePinecone(): boolean {
   }
 
   try {
-    logger.info("Attempting to initialize Pinecone client with config:", {
+    logger.info("[recommendation] Attempting to initialize Pinecone client with config:", {
       index: PINECONE_INDEX,
       hasApiKey: !!apiKey,
     });
@@ -64,14 +64,14 @@ function initializePinecone(): boolean {
     // Initialize the index
     index = pineconeClient.index(PINECONE_INDEX);
 
-    logger.info("Successfully initialized Pinecone client", {
+    logger.info("[recommendation] Successfully initialized Pinecone client", {
       indexName: PINECONE_INDEX,
       hasClient: !!pineconeClient,
       hasIndex: !!index,
     });
     return true;
   } catch (error) {
-    logger.error("Failed to initialize Pinecone client:", {
+    logger.error("[recommendation] Failed to initialize Pinecone client:", {
       error,
       errorMessage: error instanceof Error ? error.message : "Unknown error",
       errorStack: error instanceof Error ? error.stack : undefined,
@@ -112,13 +112,13 @@ function weightedAdd(target: number[], vector: number[], weight: number): void {
 
 // Define the recommendations endpoint - note the path is now "/"
 app.post("/", async (req: Request, res: Response) => {
-  logger.info("Received recommendation request", {
+  logger.info("[recommendation] Received recommendation request", {
     body: req.body,
     query: req.query,
   });
 
   if (!PINECONE_API_KEY.value() || !initializePinecone()) {
-    logger.error("Pinecone configuration error", {
+    logger.error("[recommendation] Pinecone configuration error", {
       apiKeyPresent: !!PINECONE_API_KEY.value(),
       pineconeInitialized: !!pineconeClient,
     });
@@ -129,7 +129,7 @@ app.post("/", async (req: Request, res: Response) => {
   }
 
   if (!index) {
-    logger.error("Pinecone index not initialized");
+    logger.error("[recommendation] Pinecone index not initialized");
     res.status(500).json({
       error: "Pinecone index not initialized.",
     });
@@ -139,28 +139,28 @@ app.post("/", async (req: Request, res: Response) => {
   try {
     // Extract userId from request body or query parameter
     const userId = req.body?.userId || req.query?.userId;
-    logger.info("Processing request for user", { userId });
+    logger.info("[recommendation] Processing request for user", { userId });
 
     if (!userId) {
-      logger.warn("Missing userId in request");
+      logger.warn("[recommendation] Missing userId in request");
       res.status(400).json({ error: "Missing userId parameter" });
       return;
     }
 
     // Query Firestore for all swipes by this user
-    logger.info("Querying Firestore for user swipes", { userId });
+    logger.info("[recommendation] Querying Firestore for user swipes", { userId });
     const swipesSnapshot = await db
       .collection("swipes")
       .where("userId", "==", userId)
       .get();
 
     if (swipesSnapshot.empty) {
-      logger.warn("No swipes found for user", { userId });
+      logger.warn("[recommendation] No swipes found for user", { userId });
       res.status(404).json({ message: "No swipes found for this user." });
       return;
     }
 
-    logger.info("Found swipes for user", {
+    logger.info("[recommendation] Found swipes for user", {
       userId,
       swipeCount: swipesSnapshot.size,
     });
@@ -178,7 +178,7 @@ app.post("/", async (req: Request, res: Response) => {
       videoWeights[videoId] = (videoWeights[videoId] || 0) + weight;
     });
 
-    logger.info("Processed swipes into weights", {
+    logger.info("[recommendation] Processed swipes into weights", {
       uniqueVideoCount: Object.keys(videoWeights).length,
       weights: videoWeights,
     });
@@ -192,14 +192,14 @@ app.post("/", async (req: Request, res: Response) => {
     }
 
     // Fetch video embeddings from Pinecone
-    logger.info("Fetching vectors from Pinecone", {
+    logger.info("[recommendation] Fetching vectors from Pinecone", {
       videoCount: videoIds.length,
     });
 
     const fetchResponse = await index.fetch(videoIds);
     const records = fetchResponse.records;
 
-    logger.info("Received Pinecone fetch response", {
+    logger.info("[recommendation] Received Pinecone fetch response", {
       fetchedRecordsCount: records ? Object.keys(records).length : 0,
       hasRecords: !!records,
     });
@@ -212,7 +212,7 @@ app.post("/", async (req: Request, res: Response) => {
     }
 
     // Compute aggregated user vector
-    logger.info("Computing aggregated user vector");
+    logger.info("[recommendation] Computing aggregated user vector");
     const userVector = new Array<number>(VECTOR_DIM).fill(0);
     let validCount = 0;
     for (const videoId of videoIds) {
@@ -223,7 +223,7 @@ app.post("/", async (req: Request, res: Response) => {
       }
     }
 
-    logger.info("Computed user vector", {
+    logger.info("[recommendation] Computed user vector", {
       validVectorsProcessed: validCount,
       totalVectors: videoIds.length,
     });
@@ -236,44 +236,22 @@ app.post("/", async (req: Request, res: Response) => {
     }
 
     // Query similar videos from Pinecone
-    logger.info("Querying Pinecone for recommendations");
+    logger.info("[recommendation] Querying Pinecone for recommendations");
     const queryResponse = await index.query({
       vector: userVector,
       topK: 10,
       includeMetadata: true,
     });
 
-    logger.info("Received recommendation results", {
+    logger.info("[recommendation] Received recommendation results", {
       matchCount: queryResponse.matches?.length ?? 0,
     });
-
-    // Trigger video generation in parallel
-    const baseUrl = process.env.FIREBASE_FUNCTIONS_URL ||
-                   `https://${process.env.GCLOUD_PROJECT}.cloudfunctions.net`;
-    const generationUrl = `${baseUrl}/generation`;
-
-    try {
-      // Fire and forget - don't wait for the response
-      fetch(generationUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId }),
-      }).catch(error => {
-        logger.warn("Failed to trigger generation", { error });
-        // Don't throw - this is non-critical
-      });
-    } catch (error) {
-      logger.warn("Failed to trigger generation", { error });
-      // Don't throw - this is non-critical
-    }
 
     // Just return the IDs
     const recommendations = queryResponse.matches?.map((match) => match.id) || [];
 
     // Log the response we're about to send
-    logger.info("Preparing response payload", {
+    logger.info("[recommendation] Preparing response payload", {
       matchesLength: recommendations.length,
       firstMatchId: recommendations[0],
       responseSize: JSON.stringify(recommendations).length,
@@ -290,9 +268,9 @@ app.post("/", async (req: Request, res: Response) => {
           ),
         },
       });
-      logger.info("Response sent successfully");
+      logger.info("[recommendation] Response sent successfully");
     } catch (serializationError) {
-      logger.error("Failed to serialize response:", {
+      logger.error("[recommendation] Failed to serialize response:", {
         error: serializationError instanceof Error ? serializationError.message : "Unknown error",
         stack: serializationError instanceof Error ? serializationError.stack : undefined,
       });
@@ -303,7 +281,7 @@ app.post("/", async (req: Request, res: Response) => {
     }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-    logger.error("Error in getRecommendations:", {
+    logger.error("[recommendation] Error in getRecommendations:", {
       error: errorMessage,
       stack: error instanceof Error ? error.stack : undefined,
     });
@@ -316,7 +294,7 @@ app.post("/", async (req: Request, res: Response) => {
 // Export the Express app as a Cloud Function with v2 configuration
 export const getRecommendations = onRequest(
   {
-    timeoutSeconds: 300,
+    timeoutSeconds: 60,
     memory: "1GiB",
     region: "us-central1",
     minInstances: 0,

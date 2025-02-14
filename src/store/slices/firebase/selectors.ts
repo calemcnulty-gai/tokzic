@@ -9,6 +9,15 @@ export const selectIsInitialized = (state: RootState) => state.firebase.isInitia
 export const selectIsInitializing = (state: RootState) => state.firebase.isInitializing;
 export const selectInitError = (state: RootState) => state.firebase.error;
 
+// New selector for service initialization
+export const selectServicesInitialized = createSelector(
+  [selectIsInitialized, selectInitError],
+  (isInitialized, error) => {
+    if (!isInitialized || error) return false;
+    return serviceManager.isInitialized();
+  }
+);
+
 // Auth state selectors
 export const selectUser = (state: RootState) => state.firebase.user;
 export const selectIsAuthLoading = (state: RootState) => state.firebase.isAuthLoading;

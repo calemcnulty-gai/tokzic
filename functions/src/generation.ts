@@ -72,7 +72,7 @@ async function generateVideoPrompt(
   liked: string[],
   disliked: string[]
 ): Promise<string> {
-  logger.info("Generating video prompt", {
+  logger.info("[generation] Generating video prompt", {
     likedCount: liked.length,
     dislikedCount: disliked.length,
   });
@@ -112,11 +112,11 @@ async function generateVideoPrompt(
       throw new Error("OpenAI did not return a valid completion");
     }
 
-    logger.info("Generated prompt", { prompt });
+    logger.info("[generation] Generated prompt", { prompt });
     return prompt;
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    logger.error("Error generating prompt:", {
+    logger.error("[generation] Error generating prompt:", {
       error: errorMessage,
       stack: error instanceof Error ? error.stack : undefined,
     });
@@ -126,32 +126,31 @@ async function generateVideoPrompt(
 
 // Define the generation endpoint
 app.post("/", async (req: Request, res: Response) => {
-  logger.info("Received generation request", { body: req.body });
+  logger.info("[generation] Received generation request", { body: req.body });
   // Log configuration at startup
-  logger.info("Generation service configuration loaded", {
+  logger.info("[generation] Generation service configuration loaded", {
     openAiModel: OPENAI_MODEL,
     hasReplicateKey: !!REPLICATE_API_KEY.value(),
     hasOpenAIKey: !!OPENAI_API_KEY.value(),
   });
 
-
   const userId = req.body?.userId || req.query?.userId;
   if (!userId) {
-    logger.warn("Missing userId in request");
+    logger.warn("[generation] Missing userId in request");
     res.status(400).json({ error: "Missing userId parameter" });
     return;
   }
 
   try {
     // Query Firestore for the user's swipes
-    logger.info("Querying Firestore for user swipes", { userId });
+    logger.info("[generation] Querying Firestore for user swipes", { userId });
     const swipesSnapshot = await db
       .collection("swipes")
       .where("userId", "==", userId)
       .get();
 
     if (swipesSnapshot.empty) {
-      logger.warn("No swipes found for user", { userId });
+      logger.warn("[generation] No swipes found for user", { userId });
       res.status(404).json({ error: "No swipes found for user" });
       return;
     }
@@ -173,13 +172,13 @@ app.post("/", async (req: Request, res: Response) => {
 
     const videoIds = Object.keys(videoWeights);
     if (videoIds.length === 0) {
-      logger.warn("No valid videoIds found for swipes");
+      logger.warn("[generation] No valid videoIds found for swipes");
       res.status(404).json({ error: "No valid swipes found for user" });
       return;
     }
 
     // Fetch video descriptions from Firestore
-    logger.info("Fetching video descriptions", { videoCount: videoIds.length });
+    logger.info("[generation] Fetching video descriptions", { videoCount: videoIds.length });
     const videoDocRefs = videoIds.map((videoId: string) =>
       db.collection("videos").doc(videoId)
     );
@@ -200,7 +199,7 @@ app.post("/", async (req: Request, res: Response) => {
       }
     });
 
-    logger.info("Processed video descriptions", {
+    logger.info("[generation] Processed video descriptions", {
       likedCount: likedDescriptions.length,
       dislikedCount: dislikedDescriptions.length,
     });
@@ -210,38 +209,36 @@ app.post("/", async (req: Request, res: Response) => {
 
     // Get the base URL for the webhook
     const baseUrl = process.env.FIREBASE_FUNCTIONS_URL ||
-                   `https://${process.env.GCLOUD_PROJECT}.cloudfunctions.net`;
-    const webhookUrl = `${baseUrl}/generationWebhook`;
+                   `https://us-central1-${process.env.GCLOUD_PROJECT}.cloudfunctions.net`;
+    const encodedPrompt = encodeURIComponent(prompt);
+    const webhookUrl = `${baseUrl}/generationWebhook?prompt=${encodedPrompt}`;
 
     // Initialize Replicate client and start prediction
     const replicate = getReplicate();
 
-    logger.info("Starting Luma Ray video generation", {
+    logger.info("[generation] Starting Luma Ray video generation", {
       webhookUrl,
     });
 
-    const prediction = await replicate.predictions.create({
-      version: "ray",
+    const prediction = await replicate.run("luma/ray", {
       input: {
         prompt,
-        num_frames: 16,
-        fps: 8,
-        width: 512,
-        height: 768,
-        webhook_completed: webhookUrl,
+        loop: false,
+        aspect_ratio: "3:4",
       },
+      webhook: webhookUrl,
+      webhook_events_filter: ["completed"],
     });
 
-    const replicateId = prediction.id;
-    if (!replicateId) {
-      throw new Error("Replicate API did not return an ID");
+    if (!prediction) {
+      throw new Error("Replicate API did not return a prediction");
     }
 
-    logger.info("Luma Ray prediction initiated", { replicateId });
+    logger.info("[generation] Luma Ray prediction initiated", { prediction });
 
     res.status(200).json({
       message: "Video generation started",
-      replicateId,
+      prediction,
       debug: {
         processedSwipes: swipesSnapshot.size,
         validSwipes: videoIds.length,
@@ -251,7 +248,7 @@ app.post("/", async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    logger.error("Error in generation endpoint:", {
+    logger.error("[generation] Error in generation:", {
       error: errorMessage,
       stack: error instanceof Error ? error.stack : undefined,
     });
@@ -259,7 +256,7 @@ app.post("/", async (req: Request, res: Response) => {
   }
 });
 
-// Export the generation endpoint as a Cloud Function with v2 configuration
+// Export the Express app as a Cloud Function with v2 configuration
 export const generation = onRequest(
   {
     timeoutSeconds: 300,

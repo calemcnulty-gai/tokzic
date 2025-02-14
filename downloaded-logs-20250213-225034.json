@@ -1,0 +1,420 @@
+[
+  {
+    "insertId": "67aeca940003e6de411a05eb",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://us-central1-tokzic-mobile.cloudfunctions.net/generationWebhook",
+      "requestSize": "2170",
+      "status": 500,
+      "responseSize": "439",
+      "userAgent": "Webhooks/1.56.0",
+      "remoteIp": "54.148.139.208",
+      "serverIp": "216.239.36.54",
+      "latency": "0.790278570s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "generationwebhook",
+        "configuration_name": "generationwebhook",
+        "revision_name": "generationwebhook-00004-pec",
+        "location": "us-central1",
+        "project_id": "tokzic-mobile"
+      }
+    },
+    "timestamp": "2025-02-14T04:46:11.457160Z",
+    "severity": "ERROR",
+    "labels": {
+      "instanceId": "00fd7d73379f9d973171ac11cd816adaccb834fe1f17689174f9da8c64829cc9d51a0a355104cf4571ba88cb5bd1d6ee805ab1d0a3042d7003ccc8fe8db6cad2ea842c4e426b",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/tokzic-mobile/traces/2eabc1fef785cc4caac530d4943fb509",
+    "receiveTimestamp": "2025-02-14T04:46:12.260570666Z",
+    "spanId": "1315f0b57e6f1db8",
+    "traceSampled": true
+  },
+  {
+    "insertId": "67aeca94000397f1788b6b18",
+    "jsonPayload": {
+      "stack": "Error: Value for argument \"data\" is not a valid Firestore document. Cannot use \"undefined\" as a Firestore value (found in field \"description\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.\n    at validateUserInput (/workspace/node_modules/@google-cloud/firestore/build/src/serializer.js:383:19)\n    at validateUserInput (/workspace/node_modules/@google-cloud/firestore/build/src/serializer.js:375:13)\n    at validateDocumentData (/workspace/node_modules/@google-cloud/firestore/build/src/write-batch.js:609:40)\n    at WriteBatch.set (/workspace/node_modules/@google-cloud/firestore/build/src/write-batch.js:263:9)\n    at /workspace/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:352:41\n    at /workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30\n    at NoopContextManager.with (/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)\n    at ContextAPI.with (/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)\n    at NoopTracer.startActiveSpan (/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)\n    at ProxyTracer.startActiveSpan (/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)",
+      "error": "Value for argument \"data\" is not a valid Firestore document. Cannot use \"undefined\" as a Firestore value (found in field \"description\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.",
+      "message": "Error: [generationWebhook] Error in webhook processing:\n    at entryFromArgs (/workspace/node_modules/firebase-functions/lib/logger/index.js:133:19)\n    at Object.error (/workspace/node_modules/firebase-functions/lib/logger/index.js:120:11)\n    at /workspace/lib/generationWebhook.js:279:37\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "location": "us-central1",
+        "revision_name": "generationwebhook-00004-pec",
+        "project_id": "tokzic-mobile",
+        "service_name": "generationwebhook",
+        "configuration_name": "generationwebhook"
+      }
+    },
+    "timestamp": "2025-02-14T04:46:12.235505Z",
+    "severity": "ERROR",
+    "labels": {
+      "execution_id": "4addlyqy4vkh",
+      "instanceId": "00fd7d73379f9d973171ac11cd816adaccb834fe1f17689174f9da8c64829cc9d51a0a355104cf4571ba88cb5bd1d6ee805ab1d0a3042d7003ccc8fe8db6cad2ea842c4e426b",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstderr",
+    "trace": "projects/tokzic-mobile/traces/2eabc1fef785cc4caac530d4943fb509",
+    "receiveTimestamp": "2025-02-14T04:46:12.241958960Z",
+    "spanId": "1375269923532512696",
+    "errorGroups": [
+      {
+        "id": "CO3p1Jy8n_nAIw"
+      }
+    ]
+  },
+  {
+    "insertId": "67aeca96000122e8ba98112c",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://us-central1-tokzic-mobile.cloudfunctions.net/generationWebhook",
+      "requestSize": "2170",
+      "status": 500,
+      "responseSize": "439",
+      "userAgent": "Webhooks/1.56.0",
+      "remoteIp": "52.24.126.164",
+      "serverIp": "216.239.36.54",
+      "latency": "0.667353626s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "project_id": "tokzic-mobile",
+        "service_name": "generationwebhook",
+        "configuration_name": "generationwebhook",
+        "location": "us-central1",
+        "revision_name": "generationwebhook-00004-pec"
+      }
+    },
+    "timestamp": "2025-02-14T04:46:13.404370Z",
+    "severity": "ERROR",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00fd7d73379f9d973171ac11cd816adaccb834fe1f17689174f9da8c64829cc9d51a0a355104cf4571ba88cb5bd1d6ee805ab1d0a3042d7003ccc8fe8db6cad2ea842c4e426b"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/tokzic-mobile/traces/75685a796bdb9bb20b0ac4be46c723c6",
+    "receiveTimestamp": "2025-02-14T04:46:14.259954740Z",
+    "spanId": "a06369dc53490024"
+  },
+  {
+    "insertId": "67aeca9600011a87744b0b24",
+    "jsonPayload": {
+      "error": "Value for argument \"data\" is not a valid Firestore document. Cannot use \"undefined\" as a Firestore value (found in field \"description\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.",
+      "message": "Error: [generationWebhook] Error in webhook processing:\n    at entryFromArgs (/workspace/node_modules/firebase-functions/lib/logger/index.js:133:19)\n    at Object.error (/workspace/node_modules/firebase-functions/lib/logger/index.js:120:11)\n    at /workspace/lib/generationWebhook.js:279:37\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)",
+      "stack": "Error: Value for argument \"data\" is not a valid Firestore document. Cannot use \"undefined\" as a Firestore value (found in field \"description\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.\n    at validateUserInput (/workspace/node_modules/@google-cloud/firestore/build/src/serializer.js:383:19)\n    at validateUserInput (/workspace/node_modules/@google-cloud/firestore/build/src/serializer.js:375:13)\n    at validateDocumentData (/workspace/node_modules/@google-cloud/firestore/build/src/write-batch.js:609:40)\n    at WriteBatch.set (/workspace/node_modules/@google-cloud/firestore/build/src/write-batch.js:263:9)\n    at /workspace/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:352:41\n    at /workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30\n    at NoopContextManager.with (/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)\n    at ContextAPI.with (/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)\n    at NoopTracer.startActiveSpan (/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)\n    at ProxyTracer.startActiveSpan (/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "configuration_name": "generationwebhook",
+        "project_id": "tokzic-mobile",
+        "location": "us-central1",
+        "revision_name": "generationwebhook-00004-pec",
+        "service_name": "generationwebhook"
+      }
+    },
+    "timestamp": "2025-02-14T04:46:14.072327Z",
+    "severity": "ERROR",
+    "labels": {
+      "instanceId": "00fd7d73379f9d973171ac11cd816adaccb834fe1f17689174f9da8c64829cc9d51a0a355104cf4571ba88cb5bd1d6ee805ab1d0a3042d7003ccc8fe8db6cad2ea842c4e426b",
+      "execution_id": "4adf368p4l4q",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstderr",
+    "trace": "projects/tokzic-mobile/traces/75685a796bdb9bb20b0ac4be46c723c6",
+    "receiveTimestamp": "2025-02-14T04:46:14.238954587Z",
+    "spanId": "11557197463773839396",
+    "errorGroups": [
+      {
+        "id": "CO3p1Jy8n_nAIw"
+      }
+    ]
+  },
+  {
+    "insertId": "67aeca9900086aa05902b96c",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://us-central1-tokzic-mobile.cloudfunctions.net/generationWebhook",
+      "requestSize": "2171",
+      "status": 500,
+      "responseSize": "439",
+      "userAgent": "Webhooks/1.56.0",
+      "remoteIp": "50.112.21.217",
+      "serverIp": "216.239.36.54",
+      "latency": "0.340172677s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "configuration_name": "generationwebhook",
+        "revision_name": "generationwebhook-00004-pec",
+        "project_id": "tokzic-mobile",
+        "service_name": "generationwebhook",
+        "location": "us-central1"
+      }
+    },
+    "timestamp": "2025-02-14T04:46:17.209237Z",
+    "severity": "ERROR",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00fd7d73379f9d973171ac11cd816adaccb834fe1f17689174f9da8c64829cc9d51a0a355104cf4571ba88cb5bd1d6ee805ab1d0a3042d7003ccc8fe8db6cad2ea842c4e426b"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/tokzic-mobile/traces/9a283b9e3ee0a0c05939bc8efc7b4626",
+    "receiveTimestamp": "2025-02-14T04:46:17.591035072Z",
+    "spanId": "71d3d58cf2899966"
+  },
+  {
+    "insertId": "67aeca99000868efcca1ef7b",
+    "jsonPayload": {
+      "stack": "Error: Value for argument \"data\" is not a valid Firestore document. Cannot use \"undefined\" as a Firestore value (found in field \"description\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.\n    at validateUserInput (/workspace/node_modules/@google-cloud/firestore/build/src/serializer.js:383:19)\n    at validateUserInput (/workspace/node_modules/@google-cloud/firestore/build/src/serializer.js:375:13)\n    at validateDocumentData (/workspace/node_modules/@google-cloud/firestore/build/src/write-batch.js:609:40)\n    at WriteBatch.set (/workspace/node_modules/@google-cloud/firestore/build/src/write-batch.js:263:9)\n    at /workspace/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:352:41\n    at /workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30\n    at NoopContextManager.with (/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)\n    at ContextAPI.with (/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)\n    at NoopTracer.startActiveSpan (/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)\n    at ProxyTracer.startActiveSpan (/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)",
+      "message": "Error: [generationWebhook] Error in webhook processing:\n    at entryFromArgs (/workspace/node_modules/firebase-functions/lib/logger/index.js:133:19)\n    at Object.error (/workspace/node_modules/firebase-functions/lib/logger/index.js:120:11)\n    at /workspace/lib/generationWebhook.js:279:37\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)",
+      "error": "Value for argument \"data\" is not a valid Firestore document. Cannot use \"undefined\" as a Firestore value (found in field \"description\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`."
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "revision_name": "generationwebhook-00004-pec",
+        "configuration_name": "generationwebhook",
+        "service_name": "generationwebhook",
+        "location": "us-central1",
+        "project_id": "tokzic-mobile"
+      }
+    },
+    "timestamp": "2025-02-14T04:46:17.551151Z",
+    "severity": "ERROR",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00fd7d73379f9d973171ac11cd816adaccb834fe1f17689174f9da8c64829cc9d51a0a355104cf4571ba88cb5bd1d6ee805ab1d0a3042d7003ccc8fe8db6cad2ea842c4e426b",
+      "execution_id": "4adi0u4784qv"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstderr",
+    "trace": "projects/tokzic-mobile/traces/9a283b9e3ee0a0c05939bc8efc7b4626",
+    "receiveTimestamp": "2025-02-14T04:46:17.568144428Z",
+    "spanId": "8202134147713046886",
+    "errorGroups": [
+      {
+        "id": "CO3p1Jy8n_nAIw"
+      }
+    ]
+  },
+  {
+    "insertId": "67aecaa40001706fa9d4e5cc",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://us-central1-tokzic-mobile.cloudfunctions.net/generationWebhook",
+      "requestSize": "2169",
+      "status": 500,
+      "responseSize": "439",
+      "userAgent": "Webhooks/1.56.0",
+      "remoteIp": "54.148.139.208",
+      "serverIp": "216.239.36.54",
+      "latency": "0.396124173s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "generationwebhook",
+        "project_id": "tokzic-mobile",
+        "revision_name": "generationwebhook-00004-pec",
+        "location": "us-central1",
+        "configuration_name": "generationwebhook"
+      }
+    },
+    "timestamp": "2025-02-14T04:46:27.696039Z",
+    "severity": "ERROR",
+    "labels": {
+      "instanceId": "00fd7d73379f9d973171ac11cd816adaccb834fe1f17689174f9da8c64829cc9d51a0a355104cf4571ba88cb5bd1d6ee805ab1d0a3042d7003ccc8fe8db6cad2ea842c4e426b",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/tokzic-mobile/traces/d70d360804ad542372e9621fde1c0fbb",
+    "receiveTimestamp": "2025-02-14T04:46:28.246508495Z",
+    "spanId": "78a0a46bd53b91fb",
+    "traceSampled": true
+  },
+  {
+    "insertId": "67aecaa4000167af7f89a897",
+    "jsonPayload": {
+      "error": "Value for argument \"data\" is not a valid Firestore document. Cannot use \"undefined\" as a Firestore value (found in field \"description\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.",
+      "message": "Error: [generationWebhook] Error in webhook processing:\n    at entryFromArgs (/workspace/node_modules/firebase-functions/lib/logger/index.js:133:19)\n    at Object.error (/workspace/node_modules/firebase-functions/lib/logger/index.js:120:11)\n    at /workspace/lib/generationWebhook.js:279:37\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)",
+      "stack": "Error: Value for argument \"data\" is not a valid Firestore document. Cannot use \"undefined\" as a Firestore value (found in field \"description\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.\n    at validateUserInput (/workspace/node_modules/@google-cloud/firestore/build/src/serializer.js:383:19)\n    at validateUserInput (/workspace/node_modules/@google-cloud/firestore/build/src/serializer.js:375:13)\n    at validateDocumentData (/workspace/node_modules/@google-cloud/firestore/build/src/write-batch.js:609:40)\n    at WriteBatch.set (/workspace/node_modules/@google-cloud/firestore/build/src/write-batch.js:263:9)\n    at /workspace/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:352:41\n    at /workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30\n    at NoopContextManager.with (/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)\n    at ContextAPI.with (/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)\n    at NoopTracer.startActiveSpan (/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)\n    at ProxyTracer.startActiveSpan (/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "configuration_name": "generationwebhook",
+        "location": "us-central1",
+        "project_id": "tokzic-mobile",
+        "revision_name": "generationwebhook-00004-pec",
+        "service_name": "generationwebhook"
+      }
+    },
+    "timestamp": "2025-02-14T04:46:28.092079Z",
+    "severity": "ERROR",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00fd7d73379f9d973171ac11cd816adaccb834fe1f17689174f9da8c64829cc9d51a0a355104cf4571ba88cb5bd1d6ee805ab1d0a3042d7003ccc8fe8db6cad2ea842c4e426b",
+      "execution_id": "4adq45ahms3l"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstderr",
+    "trace": "projects/tokzic-mobile/traces/d70d360804ad542372e9621fde1c0fbb",
+    "receiveTimestamp": "2025-02-14T04:46:28.225672780Z",
+    "spanId": "8692128063870964219",
+    "errorGroups": [
+      {
+        "id": "CO3p1Jy8n_nAIw"
+      }
+    ]
+  },
+  {
+    "insertId": "67aecabd000dfd29d715f6a1",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://us-central1-tokzic-mobile.cloudfunctions.net/generationWebhook",
+      "requestSize": "2171",
+      "status": 500,
+      "responseSize": "439",
+      "userAgent": "Webhooks/1.56.0",
+      "remoteIp": "54.148.139.208",
+      "serverIp": "216.239.36.54",
+      "latency": "0.718174954s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "configuration_name": "generationwebhook",
+        "project_id": "tokzic-mobile",
+        "revision_name": "generationwebhook-00004-pec",
+        "location": "us-central1",
+        "service_name": "generationwebhook"
+      }
+    },
+    "timestamp": "2025-02-14T04:46:53.191171Z",
+    "severity": "ERROR",
+    "labels": {
+      "instanceId": "00fd7d73379f9d973171ac11cd816adaccb834fe1f17689174f9da8c64829cc9d51a0a355104cf4571ba88cb5bd1d6ee805ab1d0a3042d7003ccc8fe8db6cad2ea842c4e426b",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/tokzic-mobile/traces/c7c24badd94f2b09cef2eda7041004c4",
+    "receiveTimestamp": "2025-02-14T04:46:53.922055681Z",
+    "spanId": "541353e7a53a3bd7",
+    "traceSampled": true
+  },
+  {
+    "insertId": "67aecabd000df398b3375038",
+    "jsonPayload": {
+      "message": "Error: [generationWebhook] Error in webhook processing:\n    at entryFromArgs (/workspace/node_modules/firebase-functions/lib/logger/index.js:133:19)\n    at Object.error (/workspace/node_modules/firebase-functions/lib/logger/index.js:120:11)\n    at /workspace/lib/generationWebhook.js:279:37\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)",
+      "error": "Value for argument \"data\" is not a valid Firestore document. Cannot use \"undefined\" as a Firestore value (found in field \"description\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.",
+      "stack": "Error: Value for argument \"data\" is not a valid Firestore document. Cannot use \"undefined\" as a Firestore value (found in field \"description\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.\n    at validateUserInput (/workspace/node_modules/@google-cloud/firestore/build/src/serializer.js:383:19)\n    at validateUserInput (/workspace/node_modules/@google-cloud/firestore/build/src/serializer.js:375:13)\n    at validateDocumentData (/workspace/node_modules/@google-cloud/firestore/build/src/write-batch.js:609:40)\n    at WriteBatch.set (/workspace/node_modules/@google-cloud/firestore/build/src/write-batch.js:263:9)\n    at /workspace/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:352:41\n    at /workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30\n    at NoopContextManager.with (/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)\n    at ContextAPI.with (/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)\n    at NoopTracer.startActiveSpan (/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)\n    at ProxyTracer.startActiveSpan (/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "revision_name": "generationwebhook-00004-pec",
+        "project_id": "tokzic-mobile",
+        "configuration_name": "generationwebhook",
+        "service_name": "generationwebhook",
+        "location": "us-central1"
+      }
+    },
+    "timestamp": "2025-02-14T04:46:53.914328Z",
+    "severity": "ERROR",
+    "labels": {
+      "execution_id": "4ae9sj8r27v4",
+      "instanceId": "00fd7d73379f9d973171ac11cd816adaccb834fe1f17689174f9da8c64829cc9d51a0a355104cf4571ba88cb5bd1d6ee805ab1d0a3042d7003ccc8fe8db6cad2ea842c4e426b",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstderr",
+    "trace": "projects/tokzic-mobile/traces/c7c24badd94f2b09cef2eda7041004c4",
+    "receiveTimestamp": "2025-02-14T04:46:53.919930375Z",
+    "spanId": "6058278178118056919",
+    "errorGroups": [
+      {
+        "id": "CO3p1Jy8n_nAIw"
+      }
+    ]
+  },
+  {
+    "insertId": "67aecb1400077e0b27b286aa",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://us-central1-tokzic-mobile.cloudfunctions.net/generationWebhook",
+      "requestSize": "2170",
+      "status": 500,
+      "responseSize": "439",
+      "userAgent": "Webhooks/1.56.0",
+      "remoteIp": "54.148.139.208",
+      "serverIp": "216.239.36.54",
+      "latency": "0.420713931s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "configuration_name": "generationwebhook",
+        "project_id": "tokzic-mobile",
+        "location": "us-central1",
+        "service_name": "generationwebhook",
+        "revision_name": "generationwebhook-00004-pec"
+      }
+    },
+    "timestamp": "2025-02-14T04:48:20.058251Z",
+    "severity": "ERROR",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00fd7d73379f9d973171ac11cd816adaccb834fe1f17689174f9da8c64829cc9d51a0a355104cf4571ba88cb5bd1d6ee805ab1d0a3042d7003ccc8fe8db6cad2ea842c4e426b"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/tokzic-mobile/traces/010f3ac19d873ff1cdf4203f4c39debc",
+    "receiveTimestamp": "2025-02-14T04:48:20.495399944Z",
+    "spanId": "88809811c8670d59",
+    "traceSampled": true
+  },
+  {
+    "insertId": "67aecb140007773ffcea1a01",
+    "jsonPayload": {
+      "stack": "Error: Value for argument \"data\" is not a valid Firestore document. Cannot use \"undefined\" as a Firestore value (found in field \"description\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`.\n    at validateUserInput (/workspace/node_modules/@google-cloud/firestore/build/src/serializer.js:383:19)\n    at validateUserInput (/workspace/node_modules/@google-cloud/firestore/build/src/serializer.js:375:13)\n    at validateDocumentData (/workspace/node_modules/@google-cloud/firestore/build/src/write-batch.js:609:40)\n    at WriteBatch.set (/workspace/node_modules/@google-cloud/firestore/build/src/write-batch.js:263:9)\n    at /workspace/node_modules/@google-cloud/firestore/build/src/reference/document-reference.js:352:41\n    at /workspace/node_modules/@google-cloud/firestore/build/src/telemetry/enabled-trace-util.js:110:30\n    at NoopContextManager.with (/workspace/node_modules/@opentelemetry/api/build/src/context/NoopContextManager.js:25:19)\n    at ContextAPI.with (/workspace/node_modules/@opentelemetry/api/build/src/api/context.js:60:46)\n    at NoopTracer.startActiveSpan (/workspace/node_modules/@opentelemetry/api/build/src/trace/NoopTracer.js:65:31)\n    at ProxyTracer.startActiveSpan (/workspace/node_modules/@opentelemetry/api/build/src/trace/ProxyTracer.js:36:24)",
+      "message": "Error: [generationWebhook] Error in webhook processing:\n    at entryFromArgs (/workspace/node_modules/firebase-functions/lib/logger/index.js:133:19)\n    at Object.error (/workspace/node_modules/firebase-functions/lib/logger/index.js:120:11)\n    at /workspace/lib/generationWebhook.js:279:37\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)",
+      "error": "Value for argument \"data\" is not a valid Firestore document. Cannot use \"undefined\" as a Firestore value (found in field \"description\"). If you want to ignore undefined values, enable `ignoreUndefinedProperties`."
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "revision_name": "generationwebhook-00004-pec",
+        "service_name": "generationwebhook",
+        "location": "us-central1",
+        "project_id": "tokzic-mobile",
+        "configuration_name": "generationwebhook"
+      }
+    },
+    "timestamp": "2025-02-14T04:48:20.489279Z",
+    "severity": "ERROR",
+    "labels": {
+      "execution_id": "4ag4tmlescnh",
+      "instanceId": "00fd7d73379f9d973171ac11cd816adaccb834fe1f17689174f9da8c64829cc9d51a0a355104cf4571ba88cb5bd1d6ee805ab1d0a3042d7003ccc8fe8db6cad2ea842c4e426b",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstderr",
+    "trace": "projects/tokzic-mobile/traces/010f3ac19d873ff1cdf4203f4c39debc",
+    "receiveTimestamp": "2025-02-14T04:48:20.496190049Z",
+    "spanId": "9836028788321226073",
+    "errorGroups": [
+      {
+        "id": "CO3p1Jy8n_nAIw"
+      }
+    ]
+  }
+]

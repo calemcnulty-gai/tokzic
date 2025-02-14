@@ -26,6 +26,7 @@ import {
 import { selectUser } from '../slices/firebase/selectors';
 import { AppDispatch } from '../../store';
 import { ThunkDispatch, AnyAction } from '@reduxjs/toolkit';
+import { generationService } from '../../services/generation';
 
 const logger = createLogger('VideoSlice');
 
@@ -221,9 +222,13 @@ export const rotateForward = createAsyncThunk(
         try {
           // Call the recommendation endpoint with timeout and error handling
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+          const timeoutId = setTimeout(() => {
+            controller.abort();
+            logger.error('Recommendation request timed out');
+          }, 5000); // 5 second timeout
 
-          const response = await fetch(`${process.env.FIREBASE_FUNCTIONS_URL}/getRecommendations/`, {
+          // Start both requests in parallel
+          const recommendationPromise = fetch(`${process.env.FIREBASE_FUNCTIONS_URL}/getRecommendations/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -234,6 +239,23 @@ export const rotateForward = createAsyncThunk(
             signal: controller.signal
           });
 
+          // Fire and forget the generation request
+          logger.info('Triggering video generation', { userId: user.uid });
+          fetch(`${process.env.FIREBASE_FUNCTIONS_URL}/generation/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: user.uid,
+            })
+          }).catch(error => {
+            logger.warn('Failed to trigger generation', { error });
+            // Don't throw - this is non-critical
+          });
+
+          // Wait for recommendations
+          const response = await recommendationPromise;
           clearTimeout(timeoutId);
 
           if (!response.ok) {
@@ -300,7 +322,11 @@ export const rotateForward = createAsyncThunk(
             videos: validVideos
           };
         } catch (error) {
-          logger.error('Failed to get recommendations, falling back to loop', { error });
+          logger.error('Failed to get recommendations, falling back to loop', { 
+            error,
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined
+          });
           return { type: 'loop' }; // Fallback to loop on any error
         }
       }
@@ -630,32 +656,77 @@ export const togglePlayback = createAsyncThunk(
 export const handleGeneratedVideo = createAsyncThunk(
   'video/handleGeneratedVideo',
   async (videoId: string, { dispatch, getState }) => {
+    logger.info('Handling new generated video', { videoId });
     const state = getState() as RootState;
     const { videos, currentIndex } = state.video;
     
-    // Fetch the video metadata
-    const videoDoc = await videoService.fetchVideoMetadata(videoId);
-    if (!videoDoc) {
-      throw new Error('Generated video metadata not found');
+    try {
+      // Fetch the video and its metadata
+      logger.info('Fetching generated video data', { videoId });
+      const videoWithMetadata = await videoService.fetchVideoById(videoId);
+      if (!videoWithMetadata) {
+        throw new Error('Generated video metadata not found');
+      }
+      logger.info('Successfully fetched generated video', { 
+        videoId,
+        hasUrl: !!videoWithMetadata.video.url,
+        hasMetadata: !!videoWithMetadata.metadata 
+      });
+
+      // Initialize video interactions state
+      dispatch(initializeVideoInteractions({ videoId }));
+      
+      // Preload the video
+      if (videoWithMetadata.video.url) {
+        logger.info('Preloading generated video', { videoId });
+        void videoCacheManager.preloadVideo(videoWithMetadata.video);
+      }
+
+      logger.info('Returning generated video data for insertion', { 
+        videoId,
+        currentIndex,
+        insertPosition: currentIndex + 1
+      });
+
+      return {
+        video: videoWithMetadata,
+        insertIndex: currentIndex + 1
+      };
+    } catch (error) {
+      logger.error('Failed to handle generated video', {
+        videoId,
+        error: error instanceof Error ? {
+          message: error.message,
+          stack: error.stack
+        } : error
+      });
+      throw error;
+    }
+  }
+);
+
+// Add new thunk for managing generated videos subscription
+export const subscribeToGeneratedVideos = createAsyncThunk(
+  'video/subscribeToGeneratedVideos',
+  async (_, { getState }) => {
+    const state = getState() as RootState;
+    const user = selectUser(state);
+    
+    if (!user) {
+      logger.warn('Cannot subscribe to generated videos - no user logged in');
+      return;
     }
 
-    // Create VideoWithMetadata object
-    const videoWithMetadata: VideoWithMetadata = {
-      video: {
-        id: videoId,
-        url: `https://storage.googleapis.com/tokzic-mobile.firebasestorage.app/generated_videos/${videoId}.mp4`,
-      },
-      metadata: videoDoc,
-    };
+    logger.info('Setting up generated videos subscription', { userId: user.uid });
+    generationService.subscribeToGeneratedVideos();
+  }
+);
 
-    // Insert the video after the current video
-    const newVideos = [...videos];
-    newVideos.splice(currentIndex + 1, 0, videoWithMetadata);
-
-    return {
-      video: videoWithMetadata,
-      videos: newVideos,
-    };
+export const unsubscribeFromGeneratedVideos = createAsyncThunk(
+  'video/unsubscribeFromGeneratedVideos',
+  async () => {
+    logger.info('Unsubscribing from generated videos');
+    generationService.unsubscribeFromGeneratedVideos();
   }
 );
 
@@ -839,8 +910,6 @@ const videoSlice = createSlice({
           state.isAtEnd = false;
           state.player.isPlaying = true;
           state.player.position = 0;
-          state.isVideosLoaded = true;
-          state.isMetadataLoaded = true;
         } else if (action.payload.type === 'append' && action.payload.videos) {
           logger.info('Appending new videos', {
             newVideos: action.payload.videos.map(v => ({
@@ -1128,6 +1197,20 @@ const videoSlice = createSlice({
             duration: state.player.duration,
             progress: state.player.duration ? Math.round((state.player.position / state.player.duration) * 100) : 0
           });
+
+          // If this is the start of playback (position near 0), log the feed state
+          if (state.player.position < 100 && state.player.isPlaying) {
+            logger.info('New video started playing - Current feed state', {
+              totalVideos: state.videos.length,
+              currentIndex: state.currentIndex,
+              currentVideoId: state.currentVideo?.video.id,
+              feedVideos: state.videos.map((v, idx) => ({
+                position: idx,
+                videoId: v.video.id,
+                isCurrent: idx === state.currentIndex
+              }))
+            });
+          }
         }
       })
       .addCase(handlePlaybackStatusUpdate.rejected, (state, action) => {
@@ -1141,18 +1224,78 @@ const videoSlice = createSlice({
 
       // Handle generated video
       .addCase(handleGeneratedVideo.pending, (state) => {
+        logger.info('Starting to handle generated video');
         state.isLoading = true;
-        state.error = null;
+        state.error = undefined;
+        state.errors.generation = undefined;
       })
       .addCase(handleGeneratedVideo.fulfilled, (state, action) => {
+        logger.info('Inserting generated video into queue', {
+          videoId: action.payload.video.video.id,
+          insertIndex: action.payload.insertIndex,
+          currentQueueSize: state.videos.length,
+          currentVideoId: state.currentVideo?.video.id,
+          currentIndex: state.currentIndex
+        });
+        
+        // Create a new array and insert the video at the specified index
+        const newVideos = [...state.videos];
+        newVideos.splice(action.payload.insertIndex, 0, action.payload.video);
+        
+        // Update the videos array
+        state.videos = newVideos;
+        
+        // Update loading states
         state.isLoading = false;
-        state.videos = action.payload.videos;
         state.error = null;
+        state.errors.generation = undefined;
+        
+        // Initialize loading states for the new video
+        state.loadingStates.metadata = { isLoading: false, isLoaded: true, error: null };
+        state.loadingStates.video = { isLoading: false, isLoaded: true, error: null };
+        state.loadingStates.comments = { isLoading: false, isLoaded: false, error: null };
+        state.loadingStates.likes = { isLoading: false, isLoaded: false, error: null };
+        state.loadingStates.tips = { isLoading: false, isLoaded: false, error: null };
+
+        logger.info('Successfully inserted generated video', {
+          newQueueSize: newVideos.length,
+          insertedAt: action.payload.insertIndex,
+          currentIndex: state.currentIndex,
+          currentVideoId: state.currentVideo?.video.id,
+          nextVideoId: action.payload.video.video.id
+        });
+
+        // Log out the entire feed state after insertion
+        logger.info('Feed state after insertion', {
+          totalVideos: newVideos.length,
+          currentIndex: state.currentIndex,
+          feedVideos: newVideos.map((v, idx) => ({
+            position: idx,
+            videoId: v.video.id,
+            isCurrent: idx === state.currentIndex
+          }))
+        });
       })
       .addCase(handleGeneratedVideo.rejected, (state, action) => {
+        logger.error('Failed to handle generated video', { error: action.error });
         state.isLoading = false;
-        state.error = action.error.message || 'Failed to handle generated video';
-        state.errors.generation = action.error.message || 'Failed to handle generated video';
+        state.error = action.error.message;
+        state.errors.generation = action.error.message;
+      })
+
+      // Handle generated video subscription
+      .addCase(subscribeToGeneratedVideos.pending, (state) => {
+        logger.debug('Setting up generated videos subscription');
+      })
+      .addCase(subscribeToGeneratedVideos.fulfilled, (state) => {
+        logger.info('Successfully subscribed to generated videos');
+      })
+      .addCase(subscribeToGeneratedVideos.rejected, (state, action) => {
+        logger.error('Failed to subscribe to generated videos', { error: action.error });
+        state.errors.generation = action.error.message || 'Failed to subscribe to generated videos';
+      })
+      .addCase(unsubscribeFromGeneratedVideos.fulfilled, (state) => {
+        logger.info('Successfully unsubscribed from generated videos');
       });
   }
 });

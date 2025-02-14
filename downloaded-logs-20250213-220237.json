@@ -1,0 +1,927 @@
+[
+  {
+    "insertId": "67aec038000b2839d76a21fe",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://us-central1-tokzic-mobile.cloudfunctions.net/getRecommendations/",
+      "requestSize": "467",
+      "status": 200,
+      "responseSize": "699",
+      "userAgent": "tokzic/1 CFNetwork/1568.300.101 Darwin/24.0.0",
+      "remoteIp": "24.153.157.38",
+      "serverIp": "216.239.36.54",
+      "latency": "5.572401684s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "getrecommendations",
+        "project_id": "tokzic-mobile",
+        "location": "us-central1",
+        "revision_name": "getrecommendations-00027-xib",
+        "configuration_name": "getrecommendations"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:54.907928Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/tokzic-mobile/traces/cb53f5d0674be76bce80af65bedfdd00",
+    "receiveTimestamp": "2025-02-14T04:02:00.738376140Z",
+    "spanId": "0e4cb37e43e4df4c",
+    "traceSampled": true
+  },
+  {
+    "insertId": "67aec03900095f58acb61bf3",
+    "httpRequest": {
+      "requestMethod": "POST",
+      "requestUrl": "https://us-central1-tokzic-mobile.cloudfunctions.net/generation/",
+      "requestSize": "459",
+      "status": 500,
+      "responseSize": "487",
+      "userAgent": "tokzic/1 CFNetwork/1568.300.101 Darwin/24.0.0",
+      "remoteIp": "24.153.157.38",
+      "serverIp": "216.239.36.54",
+      "latency": "6.409523826s",
+      "protocol": "HTTP/1.1"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "generation",
+        "configuration_name": "generation",
+        "project_id": "tokzic-mobile",
+        "revision_name": "generation-00002-jid",
+        "location": "us-central1"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:54.914932Z",
+    "severity": "ERROR",
+    "labels": {
+      "instanceId": "00fd7d73377eb8490904b68e8b6e9a48434b1ba6df7fb547d22adf0437a1e232242224a5fbcdcb2827f2a08d14ebb47471b4a0b85e38625b46e0e6615cfc08ba29f4363a699d",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Frequests",
+    "trace": "projects/tokzic-mobile/traces/cbe4680267289615ce80af65bedfddc7",
+    "receiveTimestamp": "2025-02-14T04:02:01.619013985Z",
+    "spanId": "762c37499545a1e9",
+    "traceSampled": true
+  },
+  {
+    "insertId": "67aec0340005b46885b8f617",
+    "jsonPayload": {
+      "message": "[recommendation] Pinecone configuration loaded:",
+      "index": "tokzic"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "location": "us-central1",
+        "project_id": "tokzic-mobile",
+        "configuration_name": "getrecommendations",
+        "service_name": "getrecommendations",
+        "revision_name": "getrecommendations-00027-xib"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:56.373864Z",
+    "severity": "INFO",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890",
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "receiveTimestamp": "2025-02-14T04:01:56.377960977Z"
+  },
+  {
+    "textPayload": "Default STARTUP TCP probe succeeded after 1 attempt for container \"worker\" on port 8080.",
+    "insertId": "67aec034000bd5ac8a37e938",
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "getrecommendations",
+        "project_id": "tokzic-mobile",
+        "revision_name": "getrecommendations-00027-xib",
+        "configuration_name": "getrecommendations",
+        "location": "us-central1"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:56.775596Z",
+    "severity": "INFO",
+    "labels": {
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00",
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fvarlog%2Fsystem",
+    "receiveTimestamp": "2025-02-14T04:01:56.780625228Z"
+  },
+  {
+    "insertId": "67aec034000c43330715fad0",
+    "jsonPayload": {
+      "message": "[recommendation] Received recommendation request",
+      "query": {},
+      "body": {
+        "userId": "cLvbrXnkZUaEAUzmJ4CBXIJlLa93"
+      }
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "configuration_name": "getrecommendations",
+        "revision_name": "getrecommendations-00027-xib",
+        "project_id": "tokzic-mobile",
+        "service_name": "getrecommendations",
+        "location": "us-central1"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:56.803635Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890",
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00",
+      "execution_id": "48sh8fjbo1m7",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cb53f5d0674be76bce80af65bedfdd00",
+    "receiveTimestamp": "2025-02-14T04:01:57.052226776Z",
+    "spanId": "1030395769647325004"
+  },
+  {
+    "insertId": "67aec034000c4512b5d7cee4",
+    "jsonPayload": {
+      "index": "tokzic",
+      "hasApiKey": true,
+      "message": "Attempting to initialize Pinecone client with config:"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "revision_name": "getrecommendations-00027-xib",
+        "service_name": "getrecommendations",
+        "configuration_name": "getrecommendations",
+        "project_id": "tokzic-mobile",
+        "location": "us-central1"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:56.804114Z",
+    "severity": "INFO",
+    "labels": {
+      "execution_id": "48sh8fjbo1m7",
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890",
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cb53f5d0674be76bce80af65bedfdd00",
+    "receiveTimestamp": "2025-02-14T04:01:57.052226776Z",
+    "spanId": "1030395769647325004"
+  },
+  {
+    "insertId": "67aec034000c49ecb2cc9f63",
+    "jsonPayload": {
+      "hasClient": true,
+      "hasIndex": true,
+      "indexName": "tokzic",
+      "message": "Successfully initialized Pinecone client"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "getrecommendations",
+        "project_id": "tokzic-mobile",
+        "configuration_name": "getrecommendations",
+        "location": "us-central1",
+        "revision_name": "getrecommendations-00027-xib"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:56.805356Z",
+    "severity": "INFO",
+    "labels": {
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00",
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890",
+      "goog-managed-by": "cloudfunctions",
+      "execution_id": "48sh8fjbo1m7"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cb53f5d0674be76bce80af65bedfdd00",
+    "receiveTimestamp": "2025-02-14T04:01:57.052226776Z",
+    "spanId": "1030395769647325004"
+  },
+  {
+    "insertId": "67aec034000c4a7acdb283d7",
+    "jsonPayload": {
+      "message": "Processing request for user",
+      "userId": "cLvbrXnkZUaEAUzmJ4CBXIJlLa93"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "revision_name": "getrecommendations-00027-xib",
+        "configuration_name": "getrecommendations",
+        "location": "us-central1",
+        "project_id": "tokzic-mobile",
+        "service_name": "getrecommendations"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:56.805498Z",
+    "severity": "INFO",
+    "labels": {
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890",
+      "execution_id": "48sh8fjbo1m7"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cb53f5d0674be76bce80af65bedfdd00",
+    "receiveTimestamp": "2025-02-14T04:01:57.052226776Z",
+    "spanId": "1030395769647325004"
+  },
+  {
+    "insertId": "67aec034000c4aaeedfe8b6e",
+    "jsonPayload": {
+      "userId": "cLvbrXnkZUaEAUzmJ4CBXIJlLa93",
+      "message": "Querying Firestore for user swipes"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "location": "us-central1",
+        "configuration_name": "getrecommendations",
+        "project_id": "tokzic-mobile",
+        "service_name": "getrecommendations",
+        "revision_name": "getrecommendations-00027-xib"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:56.805550Z",
+    "severity": "INFO",
+    "labels": {
+      "execution_id": "48sh8fjbo1m7",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890",
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cb53f5d0674be76bce80af65bedfdd00",
+    "receiveTimestamp": "2025-02-14T04:01:57.052226776Z",
+    "spanId": "1030395769647325004"
+  },
+  {
+    "insertId": "67aec0350005a0ef365fad0c",
+    "jsonPayload": {
+      "message": "Found swipes for user",
+      "userId": "cLvbrXnkZUaEAUzmJ4CBXIJlLa93",
+      "swipeCount": 190
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "getrecommendations",
+        "revision_name": "getrecommendations-00027-xib",
+        "project_id": "tokzic-mobile",
+        "location": "us-central1",
+        "configuration_name": "getrecommendations"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:57.368879Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890",
+      "execution_id": "48sh8fjbo1m7",
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cb53f5d0674be76bce80af65bedfdd00",
+    "receiveTimestamp": "2025-02-14T04:01:57.377882893Z",
+    "spanId": "1030395769647325004"
+  },
+  {
+    "insertId": "67aec0350005a6905268b991",
+    "jsonPayload": {
+      "message": "Processed swipes into weights",
+      "weights": {
+        "100496-video-720.mp4": -23,
+        "100287-video-720.mp4": -22,
+        "mixkit-dachshund-dog-while-hands-caress-it-10361-hd-ready.mp4": 20,
+        "mixkit-dog-sitting-on-log-1550-hd-ready.mp4": 22,
+        "mixkit-parrots-on-a-branch-in-a-nature-reserve-4649-hd-ready.mp4": -23,
+        "mixkit-white-cat-lying-among-the-grasses-seen-up-close-22732-hd-ready.mp4": -24,
+        "mixkit-smiling-dog-1552-hd-ready.mp4": 22,
+        "mixkit-white-blue-eyed-cat-1538-hd-ready.mp4": -20
+      },
+      "uniqueVideoCount": 8
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "location": "us-central1",
+        "project_id": "tokzic-mobile",
+        "revision_name": "getrecommendations-00027-xib",
+        "service_name": "getrecommendations",
+        "configuration_name": "getrecommendations"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:57.370320Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890",
+      "goog-managed-by": "cloudfunctions",
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00",
+      "execution_id": "48sh8fjbo1m7"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cb53f5d0674be76bce80af65bedfdd00",
+    "receiveTimestamp": "2025-02-14T04:01:57.377882893Z",
+    "spanId": "1030395769647325004"
+  },
+  {
+    "insertId": "67aec0350005a6bc484db30d",
+    "jsonPayload": {
+      "message": "Fetching vectors from Pinecone",
+      "videoCount": 8
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "project_id": "tokzic-mobile",
+        "location": "us-central1",
+        "service_name": "getrecommendations",
+        "revision_name": "getrecommendations-00027-xib",
+        "configuration_name": "getrecommendations"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:57.370364Z",
+    "severity": "INFO",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00",
+      "execution_id": "48sh8fjbo1m7",
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cb53f5d0674be76bce80af65bedfdd00",
+    "receiveTimestamp": "2025-02-14T04:01:57.377882893Z",
+    "spanId": "1030395769647325004"
+  },
+  {
+    "insertId": "67aec035000adc3c177711b1",
+    "jsonPayload": {
+      "message": "[recommendation] Pinecone configuration loaded:",
+      "index": "tokzic"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "generation",
+        "configuration_name": "generation",
+        "location": "us-central1",
+        "revision_name": "generation-00002-jid",
+        "project_id": "tokzic-mobile"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:57.711740Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "00fd7d73377eb8490904b68e8b6e9a48434b1ba6df7fb547d22adf0437a1e232242224a5fbcdcb2827f2a08d14ebb47471b4a0b85e38625b46e0e6615cfc08ba29f4363a699d",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "receiveTimestamp": "2025-02-14T04:01:57.715602547Z"
+  },
+  {
+    "textPayload": "Default STARTUP TCP probe succeeded after 1 attempt for container \"worker\" on port 8080.",
+    "insertId": "67aec0360007991e52c45aa9",
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "project_id": "tokzic-mobile",
+        "revision_name": "generation-00002-jid",
+        "location": "us-central1",
+        "configuration_name": "generation",
+        "service_name": "generation"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:58.497950Z",
+    "severity": "INFO",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00fd7d73377eb8490904b68e8b6e9a48434b1ba6df7fb547d22adf0437a1e232242224a5fbcdcb2827f2a08d14ebb47471b4a0b85e38625b46e0e6615cfc08ba29f4363a699d"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fvarlog%2Fsystem",
+    "receiveTimestamp": "2025-02-14T04:01:58.502614929Z"
+  },
+  {
+    "insertId": "67aec0360008bc5f4ae2572e",
+    "jsonPayload": {
+      "message": "[generation] Received generation request",
+      "body": {
+        "userId": "cLvbrXnkZUaEAUzmJ4CBXIJlLa93"
+      }
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "configuration_name": "generation",
+        "service_name": "generation",
+        "revision_name": "generation-00002-jid",
+        "project_id": "tokzic-mobile",
+        "location": "us-central1"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:58.572511Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "00fd7d73377eb8490904b68e8b6e9a48434b1ba6df7fb547d22adf0437a1e232242224a5fbcdcb2827f2a08d14ebb47471b4a0b85e38625b46e0e6615cfc08ba29f4363a699d",
+      "execution_id": "48silhre2766",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cbe4680267289615ce80af65bedfddc7",
+    "receiveTimestamp": "2025-02-14T04:01:58.718600731Z",
+    "spanId": "8515241784627274217"
+  },
+  {
+    "insertId": "67aec0360008bfa388f3f853",
+    "jsonPayload": {
+      "message": "[generation] Generation service configuration loaded",
+      "hasOpenAIKey": true,
+      "hasReplicateKey": true,
+      "openAiModel": "gpt-3.5-turbo"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "location": "us-central1",
+        "project_id": "tokzic-mobile",
+        "revision_name": "generation-00002-jid",
+        "configuration_name": "generation",
+        "service_name": "generation"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:58.573347Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "00fd7d73377eb8490904b68e8b6e9a48434b1ba6df7fb547d22adf0437a1e232242224a5fbcdcb2827f2a08d14ebb47471b4a0b85e38625b46e0e6615cfc08ba29f4363a699d",
+      "execution_id": "48silhre2766",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cbe4680267289615ce80af65bedfddc7",
+    "receiveTimestamp": "2025-02-14T04:01:58.718600731Z",
+    "spanId": "8515241784627274217"
+  },
+  {
+    "insertId": "67aec0360008c069c1ea3040",
+    "jsonPayload": {
+      "message": "[generation] Querying Firestore for user swipes",
+      "userId": "cLvbrXnkZUaEAUzmJ4CBXIJlLa93"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "configuration_name": "generation",
+        "project_id": "tokzic-mobile",
+        "location": "us-central1",
+        "revision_name": "generation-00002-jid",
+        "service_name": "generation"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:58.573545Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "00fd7d73377eb8490904b68e8b6e9a48434b1ba6df7fb547d22adf0437a1e232242224a5fbcdcb2827f2a08d14ebb47471b4a0b85e38625b46e0e6615cfc08ba29f4363a699d",
+      "goog-managed-by": "cloudfunctions",
+      "execution_id": "48silhre2766"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cbe4680267289615ce80af65bedfddc7",
+    "receiveTimestamp": "2025-02-14T04:01:58.718600731Z",
+    "spanId": "8515241784627274217"
+  },
+  {
+    "insertId": "67aec03700073f5594f0cb60",
+    "jsonPayload": {
+      "message": "[generation] Fetching video descriptions",
+      "videoCount": 8
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "location": "us-central1",
+        "configuration_name": "generation",
+        "revision_name": "generation-00002-jid",
+        "project_id": "tokzic-mobile",
+        "service_name": "generation"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:59.474965Z",
+    "severity": "INFO",
+    "labels": {
+      "execution_id": "48silhre2766",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00fd7d73377eb8490904b68e8b6e9a48434b1ba6df7fb547d22adf0437a1e232242224a5fbcdcb2827f2a08d14ebb47471b4a0b85e38625b46e0e6615cfc08ba29f4363a699d"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cbe4680267289615ce80af65bedfddc7",
+    "receiveTimestamp": "2025-02-14T04:01:59.712773719Z",
+    "spanId": "8515241784627274217"
+  },
+  {
+    "insertId": "67aec03700085497d3e56a03",
+    "jsonPayload": {
+      "likedCount": 71,
+      "dislikedCount": 119,
+      "message": "[generation] Processed video descriptions"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "service_name": "generation",
+        "revision_name": "generation-00002-jid",
+        "configuration_name": "generation",
+        "location": "us-central1",
+        "project_id": "tokzic-mobile"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:59.545943Z",
+    "severity": "INFO",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "execution_id": "48silhre2766",
+      "instanceId": "00fd7d73377eb8490904b68e8b6e9a48434b1ba6df7fb547d22adf0437a1e232242224a5fbcdcb2827f2a08d14ebb47471b4a0b85e38625b46e0e6615cfc08ba29f4363a699d"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cbe4680267289615ce80af65bedfddc7",
+    "receiveTimestamp": "2025-02-14T04:01:59.712773719Z",
+    "spanId": "8515241784627274217"
+  },
+  {
+    "insertId": "67aec03700085609cf44c8e2",
+    "jsonPayload": {
+      "likedCount": 71,
+      "message": "[generation] Generating video prompt",
+      "dislikedCount": 119
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "project_id": "tokzic-mobile",
+        "revision_name": "generation-00002-jid",
+        "service_name": "generation",
+        "location": "us-central1",
+        "configuration_name": "generation"
+      }
+    },
+    "timestamp": "2025-02-14T04:01:59.546313Z",
+    "severity": "INFO",
+    "labels": {
+      "execution_id": "48silhre2766",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00fd7d73377eb8490904b68e8b6e9a48434b1ba6df7fb547d22adf0437a1e232242224a5fbcdcb2827f2a08d14ebb47471b4a0b85e38625b46e0e6615cfc08ba29f4363a699d"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cbe4680267289615ce80af65bedfddc7",
+    "receiveTimestamp": "2025-02-14T04:01:59.712773719Z",
+    "spanId": "8515241784627274217"
+  },
+  {
+    "insertId": "67aec03800099d662e2056bc",
+    "jsonPayload": {
+      "message": "Received Pinecone fetch response",
+      "hasRecords": true,
+      "fetchedRecordsCount": 8
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "location": "us-central1",
+        "project_id": "tokzic-mobile",
+        "configuration_name": "getrecommendations",
+        "revision_name": "getrecommendations-00027-xib",
+        "service_name": "getrecommendations"
+      }
+    },
+    "timestamp": "2025-02-14T04:02:00.630118Z",
+    "severity": "INFO",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890",
+      "execution_id": "48sh8fjbo1m7",
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cb53f5d0674be76bce80af65bedfdd00",
+    "receiveTimestamp": "2025-02-14T04:02:00.707950010Z",
+    "spanId": "1030395769647325004"
+  },
+  {
+    "textPayload": "Computing aggregated user vector",
+    "insertId": "67aec03800099e4e66c7962c",
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "revision_name": "getrecommendations-00027-xib",
+        "configuration_name": "getrecommendations",
+        "service_name": "getrecommendations",
+        "location": "us-central1",
+        "project_id": "tokzic-mobile"
+      }
+    },
+    "timestamp": "2025-02-14T04:02:00.630350Z",
+    "severity": "INFO",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "execution_id": "48sh8fjbo1m7",
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00",
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cb53f5d0674be76bce80af65bedfdd00",
+    "receiveTimestamp": "2025-02-14T04:02:00.707950010Z",
+    "spanId": "1030395769647325004"
+  },
+  {
+    "insertId": "67aec0380009a883a4554d50",
+    "jsonPayload": {
+      "totalVectors": 8,
+      "validVectorsProcessed": 8,
+      "message": "Computed user vector"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "revision_name": "getrecommendations-00027-xib",
+        "configuration_name": "getrecommendations",
+        "project_id": "tokzic-mobile",
+        "location": "us-central1",
+        "service_name": "getrecommendations"
+      }
+    },
+    "timestamp": "2025-02-14T04:02:00.632963Z",
+    "severity": "INFO",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00",
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890",
+      "execution_id": "48sh8fjbo1m7"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cb53f5d0674be76bce80af65bedfdd00",
+    "receiveTimestamp": "2025-02-14T04:02:00.707950010Z",
+    "spanId": "1030395769647325004"
+  },
+  {
+    "textPayload": "Querying Pinecone for recommendations",
+    "insertId": "67aec0380009a8c65f7f86b8",
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "configuration_name": "getrecommendations",
+        "location": "us-central1",
+        "project_id": "tokzic-mobile",
+        "revision_name": "getrecommendations-00027-xib",
+        "service_name": "getrecommendations"
+      }
+    },
+    "timestamp": "2025-02-14T04:02:00.633030Z",
+    "severity": "INFO",
+    "labels": {
+      "execution_id": "48sh8fjbo1m7",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890",
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cb53f5d0674be76bce80af65bedfdd00",
+    "receiveTimestamp": "2025-02-14T04:02:00.707950010Z",
+    "spanId": "1030395769647325004"
+  },
+  {
+    "insertId": "67aec038000af73fdcfe4cbb",
+    "jsonPayload": {
+      "message": "Received recommendation results",
+      "matchCount": 8
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "project_id": "tokzic-mobile",
+        "configuration_name": "getrecommendations",
+        "location": "us-central1",
+        "revision_name": "getrecommendations-00027-xib",
+        "service_name": "getrecommendations"
+      }
+    },
+    "timestamp": "2025-02-14T04:02:00.718655Z",
+    "severity": "INFO",
+    "labels": {
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00",
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890",
+      "goog-managed-by": "cloudfunctions",
+      "execution_id": "48sh8fjbo1m7"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cb53f5d0674be76bce80af65bedfdd00",
+    "receiveTimestamp": "2025-02-14T04:02:01.042087558Z",
+    "spanId": "1030395769647325004"
+  },
+  {
+    "insertId": "67aec038000af8d5ea56c03b",
+    "jsonPayload": {
+      "responseSize": 386,
+      "message": "Preparing response payload",
+      "firstMatchId": "mixkit-dachshund-dog-while-hands-caress-it-10361-hd-ready.mp4",
+      "matchesLength": 8
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "location": "us-central1",
+        "revision_name": "getrecommendations-00027-xib",
+        "service_name": "getrecommendations",
+        "project_id": "tokzic-mobile",
+        "configuration_name": "getrecommendations"
+      }
+    },
+    "timestamp": "2025-02-14T04:02:00.719061Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890",
+      "execution_id": "48sh8fjbo1m7",
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cb53f5d0674be76bce80af65bedfdd00",
+    "receiveTimestamp": "2025-02-14T04:02:01.042087558Z",
+    "spanId": "1030395769647325004"
+  },
+  {
+    "textPayload": "[recommendation] Response sent successfully",
+    "insertId": "67aec038000b03e3341d8f25",
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "configuration_name": "getrecommendations",
+        "revision_name": "getrecommendations-00027-xib",
+        "service_name": "getrecommendations",
+        "project_id": "tokzic-mobile",
+        "location": "us-central1"
+      }
+    },
+    "timestamp": "2025-02-14T04:02:00.721891Z",
+    "severity": "INFO",
+    "labels": {
+      "instanceId": "00fd7d7337512adb9870c2bf8025bcc5325c56fd5813023192825077c6edf34d2d8b4caa45e9b36de0c7de6c63e45e376e41629fd2c2dab1d6954dda66b9e8577bb8d3e3c890",
+      "execution_id": "48sh8fjbo1m7",
+      "run.googleapis.com/base_image_versions": "us-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/nodejs18:nodejs18_20250202_18_20_6_RC00",
+      "goog-managed-by": "cloudfunctions"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cb53f5d0674be76bce80af65bedfdd00",
+    "receiveTimestamp": "2025-02-14T04:02:01.042087558Z",
+    "spanId": "1030395769647325004"
+  },
+  {
+    "insertId": "67aec0390003ad26f9df927f",
+    "jsonPayload": {
+      "prompt": "Immerse yourself in a heartwarming vertical video featuring a friendly brown dog getting showered with love and pets. Watch as the adorable white and brown dog flashes a big, contagious smile that will brighten your day. The playful pup is seen sitting on a log, enjoying every moment with pure joy and happiness. This endearing video captures the essence of unconditional love and companionship, making it a must-watch for all animal lovers. So sit back, relax, and let this charming video bring a smile to your face as you witness the pure bliss of a furry friend's affectionate moments.",
+      "message": "[generation] Generated prompt"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "project_id": "tokzic-mobile",
+        "service_name": "generation",
+        "location": "us-central1",
+        "configuration_name": "generation",
+        "revision_name": "generation-00002-jid"
+      }
+    },
+    "timestamp": "2025-02-14T04:02:01.240934Z",
+    "severity": "INFO",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "execution_id": "48silhre2766",
+      "instanceId": "00fd7d73377eb8490904b68e8b6e9a48434b1ba6df7fb547d22adf0437a1e232242224a5fbcdcb2827f2a08d14ebb47471b4a0b85e38625b46e0e6615cfc08ba29f4363a699d"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cbe4680267289615ce80af65bedfddc7",
+    "receiveTimestamp": "2025-02-14T04:02:01.384430112Z",
+    "spanId": "8515241784627274217"
+  },
+  {
+    "insertId": "67aec0390003af6252b3eaf7",
+    "jsonPayload": {
+      "message": "[generation] Starting Luma Ray video generation",
+      "webhookUrl": "https://tokzic-mobile.cloudfunctions.net/generationWebhook"
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "configuration_name": "generation",
+        "revision_name": "generation-00002-jid",
+        "location": "us-central1",
+        "service_name": "generation",
+        "project_id": "tokzic-mobile"
+      }
+    },
+    "timestamp": "2025-02-14T04:02:01.241506Z",
+    "severity": "INFO",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "00fd7d73377eb8490904b68e8b6e9a48434b1ba6df7fb547d22adf0437a1e232242224a5fbcdcb2827f2a08d14ebb47471b4a0b85e38625b46e0e6615cfc08ba29f4363a699d",
+      "execution_id": "48silhre2766"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstdout",
+    "trace": "projects/tokzic-mobile/traces/cbe4680267289615ce80af65bedfddc7",
+    "receiveTimestamp": "2025-02-14T04:02:01.384430112Z",
+    "spanId": "8515241784627274217"
+  },
+  {
+    "insertId": "67aec0390008cef15451e834",
+    "jsonPayload": {
+      "stack": "ApiError: Request to https://api.replicate.com/v1/predictions failed with status 422 Unprocessable Entity: {\"title\":\"Invalid version or not permitted\",\"detail\":\"The specified version does not exist (or perhaps you don't have permission to use it?)\",\"status\":422}\n.\n    at Replicate.request (/workspace/node_modules/replicate/index.js:293:13)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async Replicate.createPrediction (/workspace/node_modules/replicate/lib/predictions.js:39:16)\n    at async /workspace/lib/generation.js:220:28",
+      "message": "Error: [generation] Error in generation:\n    at entryFromArgs (/workspace/node_modules/firebase-functions/lib/logger/index.js:133:19)\n    at Object.error (/workspace/node_modules/firebase-functions/lib/logger/index.js:120:11)\n    at /workspace/lib/generation.js:249:37\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)",
+      "error": "Request to https://api.replicate.com/v1/predictions failed with status 422 Unprocessable Entity: {\"title\":\"Invalid version or not permitted\",\"detail\":\"The specified version does not exist (or perhaps you don't have permission to use it?)\",\"status\":422}\n."
+    },
+    "resource": {
+      "type": "cloud_run_revision",
+      "labels": {
+        "project_id": "tokzic-mobile",
+        "service_name": "generation",
+        "configuration_name": "generation",
+        "revision_name": "generation-00002-jid",
+        "location": "us-central1"
+      }
+    },
+    "timestamp": "2025-02-14T04:02:01.577265Z",
+    "severity": "ERROR",
+    "labels": {
+      "goog-managed-by": "cloudfunctions",
+      "execution_id": "48silhre2766",
+      "instanceId": "00fd7d73377eb8490904b68e8b6e9a48434b1ba6df7fb547d22adf0437a1e232242224a5fbcdcb2827f2a08d14ebb47471b4a0b85e38625b46e0e6615cfc08ba29f4363a699d"
+    },
+    "logName": "projects/tokzic-mobile/logs/run.googleapis.com%2Fstderr",
+    "trace": "projects/tokzic-mobile/traces/cbe4680267289615ce80af65bedfddc7",
+    "receiveTimestamp": "2025-02-14T04:02:01.582918677Z",
+    "spanId": "8515241784627274217",
+    "errorGroups": [
+      {
+        "id": "CJeq05nBienRfw"
+      }
+    ]
+  },
+  {
+    "insertId": "2653692268854735516",
+    "jsonPayload": {
+      "exceptionInfo": {
+        "message": "[generation] Error in generation:",
+        "type": "Error"
+      },
+      "message": "Error detected in generation version generation-00002-jid",
+      "errorEvent": {
+        "serviceContext": {
+          "service": "generation",
+          "version": "generation-00002-jid",
+          "resourceType": "cloud_run_revision"
+        },
+        "eventTime": "2025-02-14T04:02:01.577265Z",
+        "message": "Error: [generation] Error in generation:\n    at entryFromArgs (/workspace/node_modules/firebase-functions/lib/logger/index.js:133:19)\n    at Object.error (/workspace/node_modules/firebase-functions/lib/logger/index.js:120:11)\n    at /workspace/lib/generation.js:249:37\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)"
+      },
+      "errorGroup": "projects/tokzic-mobile/groups/CJeq05nBienRfw",
+      "@type": "type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.Insight"
+    },
+    "resource": {
+      "type": "reported_errors",
+      "labels": {
+        "project_id": "tokzic-mobile"
+      }
+    },
+    "timestamp": "2025-02-14T04:02:11.170922435Z",
+    "severity": "NOTICE",
+    "labels": {
+      "notificationType": "New",
+      "causeLineNumber": "249",
+      "deploymentVersion": "generation-00002-jid",
+      "causeFullyQualifiedFunction": "",
+      "causeFullFilePath": "/workspace/lib/generation.js",
+      "errorGroupId": "CJeq05nBienRfw",
+      "logMessage": "Error: [generation] Error in generation:\n    at entryFromArgs (/workspace/node_modules/firebase-functions/lib/logger/index.js:133:19)\n    at Object.error (/workspace/node_modules/firebase-functions/lib/logger/index.js:120:11)\n    at /workspace/lib/generation.js:249:37\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)",
+      "cloudRegion": "global",
+      "exceptionType": "Error",
+      "clouderrorreporting.googleapis.com/notification_trigger_error_ingestion_time": "2025-02-14T04:02:01.582918677+00:00",
+      "exceptionMessage": "[generation] Error in generation:",
+      "activity_type_name": "CrashReportingErrorGroupNew",
+      "deploymentAppId": "generation"
+    },
+    "logName": "projects/tokzic-mobile/logs/clouderrorreporting.googleapis.com%2Finsights",
+    "receiveTimestamp": "2025-02-14T04:02:11.170922435Z"
+  }
+]
