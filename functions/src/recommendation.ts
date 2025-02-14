@@ -247,6 +247,28 @@ app.post("/", async (req: Request, res: Response) => {
       matchCount: queryResponse.matches?.length ?? 0,
     });
 
+    // Trigger video generation in parallel
+    const baseUrl = process.env.FIREBASE_FUNCTIONS_URL ||
+                   `https://${process.env.GCLOUD_PROJECT}.cloudfunctions.net`;
+    const generationUrl = `${baseUrl}/generation`;
+
+    try {
+      // Fire and forget - don't wait for the response
+      fetch(generationUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      }).catch(error => {
+        logger.warn("Failed to trigger generation", { error });
+        // Don't throw - this is non-critical
+      });
+    } catch (error) {
+      logger.warn("Failed to trigger generation", { error });
+      // Don't throw - this is non-critical
+    }
+
     // Just return the IDs
     const recommendations = queryResponse.matches?.map((match) => match.id) || [];
 

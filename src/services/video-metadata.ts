@@ -21,21 +21,22 @@ import {
   type Firestore,
   deleteDoc
 } from 'firebase/firestore';
-import { store } from '../store';
 
 const logger = createLogger('VideoMetadata');
 
 export class VideoMetadataService {
+  private db: Firestore;
+
+  constructor(db: Firestore) {
+    this.db = db;
+  }
+
   private getFirestore(): Firestore {
-    const state = store.getState();
-    const { db } = state.firebase;
-    
-    if (!db) {
+    if (!this.db) {
       logger.error('Firestore not initialized');
       throw new Error('Firestore not initialized');
     }
-
-    return db;
+    return this.db;
   }
 
   /**
@@ -464,7 +465,4 @@ export class VideoMetadataService {
       throw error;
     }
   }
-}
-
-// Export singleton instance
-export const videoMetadata = new VideoMetadataService(); 
+} 

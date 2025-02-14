@@ -81,6 +81,7 @@ interface VideoState extends LoadingState {
     like?: string;
     dislike?: string;
     view?: string;
+    generation?: string;
   };
   interactions: {
     [videoId: string]: VideoInteractionState;
@@ -94,6 +95,7 @@ interface VideoState extends LoadingState {
     activeIndex: number;
     mountTime: number;
     lastIndexChangeTime: number;
+    pendingGenerations: string[]; // Track pending generation IDs
   };
 }
 
@@ -139,6 +141,7 @@ const initialState: VideoState = {
     activeIndex: 0,
     mountTime: Date.now(),
     lastIndexChangeTime: Date.now(),
+    pendingGenerations: [], // Initialize empty array
   },
 };
 
@@ -623,6 +626,39 @@ export const togglePlayback = createAsyncThunk(
   }
 );
 
+// Add new thunk for handling generated videos
+export const handleGeneratedVideo = createAsyncThunk(
+  'video/handleGeneratedVideo',
+  async (videoId: string, { dispatch, getState }) => {
+    const state = getState() as RootState;
+    const { videos, currentIndex } = state.video;
+    
+    // Fetch the video metadata
+    const videoDoc = await videoService.fetchVideoMetadata(videoId);
+    if (!videoDoc) {
+      throw new Error('Generated video metadata not found');
+    }
+
+    // Create VideoWithMetadata object
+    const videoWithMetadata: VideoWithMetadata = {
+      video: {
+        id: videoId,
+        url: `https://storage.googleapis.com/tokzic-mobile.firebasestorage.app/generated_videos/${videoId}.mp4`,
+      },
+      metadata: videoDoc,
+    };
+
+    // Insert the video after the current video
+    const newVideos = [...videos];
+    newVideos.splice(currentIndex + 1, 0, videoWithMetadata);
+
+    return {
+      video: videoWithMetadata,
+      videos: newVideos,
+    };
+  }
+);
+
 const videoSlice = createSlice({
   name: 'video',
   initialState,
@@ -670,6 +706,14 @@ const videoSlice = createSlice({
         currentVideoId: state.currentVideo?.video.id,
         totalVideos: state.videos.length
       });
+    },
+    addPendingGeneration(state, action: PayloadAction<string>) {
+      state.feed.pendingGenerations.push(action.payload);
+    },
+    removePendingGeneration(state, action: PayloadAction<string>) {
+      state.feed.pendingGenerations = state.feed.pendingGenerations.filter(
+        id => id !== action.payload
+      );
     },
   },
   extraReducers: (builder) => {
@@ -1093,6 +1137,22 @@ const videoSlice = createSlice({
       // Handle toggle playback
       .addCase(togglePlayback.fulfilled, (state, action) => {
         state.player.isPlaying = action.payload.isPlaying;
+      })
+
+      // Handle generated video
+      .addCase(handleGeneratedVideo.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(handleGeneratedVideo.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.videos = action.payload.videos;
+        state.error = null;
+      })
+      .addCase(handleGeneratedVideo.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to handle generated video';
+        state.errors.generation = action.error.message || 'Failed to handle generated video';
       });
   }
 });
@@ -1196,6 +1256,8 @@ export const {
   setActiveIndex,
   logFeedUpdate,
   triggerSwipe,
+  addPendingGeneration,
+  removePendingGeneration,
 } = videoSlice.actions;
 
 export default videoSlice.reducer; 
