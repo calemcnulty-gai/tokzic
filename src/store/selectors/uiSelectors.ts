@@ -1,5 +1,7 @@
 import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from '../';
+import type { LoadingState } from '../../types/state';
+import type { UIState } from '../slices/uiSlice';
 
 // Base selectors
 const selectUIState = (state: RootState) => state.ui;
@@ -54,46 +56,11 @@ export const selectAllLoadingStates = createSelector(
   (loadingStates) => loadingStates
 );
 
-export const selectIsLoadingComments = createSelector(
-  [selectLoadingStates],
-  (loadingStates) => loadingStates.isLoadingComments
-);
-
-export const selectIsSubmittingComment = createSelector(
-  [selectLoadingStates],
-  (loadingStates) => loadingStates.isSubmittingComment
-);
-
-export const selectIsProcessingTip = createSelector(
-  [selectLoadingStates],
-  (loadingStates) => loadingStates.isProcessingTip
-);
-
-export const selectIsProcessingLike = createSelector(
-  [selectLoadingStates],
-  (loadingStates) => loadingStates.isProcessingLike
-);
-
-// Combined selectors
-export const selectInteractionLoadingStates = createSelector(
-  [selectLoadingStates],
-  (loadingStates) => ({
-    isLoadingComments: loadingStates.isLoadingComments,
-    isSubmittingComment: loadingStates.isSubmittingComment,
-    isProcessingTip: loadingStates.isProcessingTip,
-    isProcessingLike: loadingStates.isProcessingLike
-  })
-);
-
 // Combined loading states selector
 export const selectCombinedLoadingState = createSelector(
   [selectLoadingStates],
   (loadingStates) => ({
-    isLoadingComments: loadingStates.isLoadingComments,
-    isSubmittingComment: loadingStates.isSubmittingComment,
-    isProcessingLike: loadingStates.isProcessingLike,
-    isProcessingTip: loadingStates.isProcessingTip,
-    isProcessingVideo: loadingStates.isProcessingVideo,
-    isLoadingMetadata: loadingStates.isLoadingMetadata
+    isProcessingVideo: loadingStates.video.isLoading,
+    isLoadingMetadata: loadingStates.metadata.isLoading
   })
 ); 

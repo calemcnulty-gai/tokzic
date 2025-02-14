@@ -1,13 +1,12 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../theme/ThemeProvider';
-import { VideoMetadata } from '../../types/firestore';
+import type { VideoMetadata } from '../../types/firestore';
 import { createLogger } from '../../utils/logger';
 import { formatNumber } from '../../utils/format';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { AnyAction, ThunkDispatch } from '@reduxjs/toolkit';
-import { RootState } from '../../store';
+import type { RootState } from '../../store/types';
 import {
   toggleComments,
   toggleTipSelector,
@@ -15,11 +14,11 @@ import {
   selectIsProcessingLike,
   selectIsProcessingTip
 } from '../../store/slices/uiSlice';
+import { selectVideoInteractionState } from '../../store/selectors/interactionSelectors';
 import {
   handleVideoLike,
-  handleVideoDislike,
-  selectVideoLikeStatus
-} from '../../store/slices/videoSlice';
+  handleVideoDislike
+} from '../../store/slices/interactionSlice';
 import { signOut } from '../../store/slices/authSlice';
 
 const logger = createLogger('VideoOverlay');
@@ -30,13 +29,15 @@ interface VideoOverlayProps {
 
 export const VideoOverlay = React.memo(function VideoOverlay({ metadata }: VideoOverlayProps) {
   const theme = useTheme();
-  const dispatch = useAppDispatch() as ThunkDispatch<RootState, unknown, AnyAction>;
+  const dispatch = useAppDispatch();
 
-  // Get all state from Redux
+  // Get all state from Redux using properly typed selectors
   const isOverlayVisible = useAppSelector(selectOverlayVisibility);
-  const { isLiked, isDisliked } = useAppSelector(state => selectVideoLikeStatus(state, metadata.id));
+  const interactionState = useAppSelector((state: RootState) => selectVideoInteractionState(state, metadata.id));
   const isProcessingLike = useAppSelector(selectIsProcessingLike);
   const isProcessingTip = useAppSelector(selectIsProcessingTip);
+
+  const { isLiked, isDisliked, likeCount, dislikeCount } = interactionState;
 
   const handleLogout = async () => {
     try {
@@ -47,6 +48,22 @@ export const VideoOverlay = React.memo(function VideoOverlay({ metadata }: Video
       logger.error('Logout failed', { error });
     }
   };
+
+  const handleLike = useCallback(async () => {
+    try {
+      await dispatch(handleVideoLike({ videoId: metadata.id }));
+    } catch (error) {
+      logger.error('Failed to handle like', { error });
+    }
+  }, [dispatch, metadata.id]);
+
+  const handleDislike = useCallback(async () => {
+    try {
+      await dispatch(handleVideoDislike({ videoId: metadata.id }));
+    } catch (error) {
+      logger.error('Failed to handle dislike', { error });
+    }
+  }, [dispatch, metadata.id]);
 
   if (!isOverlayVisible) return null;
 
@@ -66,7 +83,7 @@ export const VideoOverlay = React.memo(function VideoOverlay({ metadata }: Video
             color={isLiked ? theme.colors.neon.pink : theme.colors.text.primary} 
           />
           <Text style={[styles.statsText, { color: theme.colors.text.primary }]}>
-            {formatNumber(metadata.stats?.likes ?? 0)}
+            {formatNumber(likeCount)}
           </Text>
         </View>
 
@@ -103,8 +120,8 @@ export const VideoOverlay = React.memo(function VideoOverlay({ metadata }: Video
         <View style={styles.actionButtons}>
           <TouchableOpacity 
             style={styles.actionButton} 
-            onPress={() => dispatch(handleVideoLike({ videoId: metadata.id }))}
-            onLongPress={() => dispatch(handleVideoDislike({ videoId: metadata.id }))}
+            onPress={handleLike}
+            onLongPress={handleDislike}
             delayLongPress={500}
             disabled={isProcessingLike}
           >

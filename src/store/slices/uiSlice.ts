@@ -1,59 +1,47 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { createLogger } from '../../utils/logger';
-import { RootState } from '../';
+import type { RootState, Toast } from '../types';
+import type { LoadingState } from '../../types/state';
 
 const logger = createLogger('UISlice');
 
-interface LoadingState {
-  isLoading: boolean;  // Currently loading
-  isLoaded: boolean;   // Successfully loaded
-  error: string | null // Any error that occurred
-}
-
 interface UILoadingStates {
-  comments: LoadingState;
-  tip: LoadingState;
-  like: LoadingState;
+  video: LoadingState;
+  metadata: LoadingState;
 }
 
-interface UIState extends LoadingState {
-  // Visibility States
+export interface UIState {
+  theme: 'light' | 'dark';
+  isFullscreen: boolean;
+  isSidebarOpen: boolean;
   isCommentsVisible: boolean;
   isOverlayVisible: boolean;
   isTipSelectorVisible: boolean;
-  
-  // Modal and Toast States
   activeModal: string | null;
-  toasts: {
-    id: string;
-    message: string;
-    type: 'success' | 'error' | 'info' | 'warning';
-  }[];
-
-  // Loading States
+  toasts: Toast[];
   loadingStates: UILoadingStates;
 }
 
 const initialState: UIState = {
-  // Root loading state
-  isLoading: false,
-  isLoaded: false,
-  error: null,
-
-  // Visibility States
+  theme: 'dark',
+  isFullscreen: false,
+  isSidebarOpen: false,
   isCommentsVisible: false,
   isOverlayVisible: true,
   isTipSelectorVisible: false,
-
-  // Modal and Toast States
   activeModal: null,
   toasts: [],
-
-  // Loading States
   loadingStates: {
-    comments: { isLoading: false, isLoaded: false, error: null },
-    tip: { isLoading: false, isLoaded: false, error: null },
-    like: { isLoading: false, isLoaded: false, error: null }
+    video: {
+      isLoading: false,
+      isLoaded: false,
+      error: null
+    },
+    metadata: {
+      isLoading: false,
+      isLoaded: false,
+      error: null
+    }
   }
 };
 
@@ -110,24 +98,14 @@ const uiSlice = createSlice({
       loaded?: boolean;
       error?: string | null;
     }>) => {
-      const { key, loading, loaded = false, error = null } = action.payload;
-      state.loadingStates[key] = {
-        isLoading: loading,
-        isLoaded: loaded,
-        error
-      };
+      const { key, loading } = action.payload;
+      state.loadingStates[key].isLoading = loading;
       logger.debug('Loading state updated', action.payload);
     },
   },
 });
 
 // Selectors
-export const selectUIState = (state: RootState): LoadingState => ({
-  isLoading: state.ui.isLoading,
-  isLoaded: state.ui.isLoaded,
-  error: state.ui.error
-});
-
 export const selectVisibilityState = (state: RootState) => ({
   isCommentsVisible: state.ui.isCommentsVisible,
   isOverlayVisible: state.ui.isOverlayVisible,
@@ -152,36 +130,21 @@ export const selectAllToasts = (state: RootState) =>
 export const selectLatestToast = (state: RootState) => 
   state.ui.toasts[state.ui.toasts.length - 1];
 
+// Loading state selectors
 export const selectAllLoadingStates = (state: RootState) => 
   state.ui.loadingStates;
 
-export const selectCommentsLoadingState = (state: RootState): LoadingState => 
-  state.ui.loadingStates.comments;
-
-export const selectTipLoadingState = (state: RootState): LoadingState => 
-  state.ui.loadingStates.tip;
-
-export const selectLikeLoadingState = (state: RootState): LoadingState => 
-  state.ui.loadingStates.like;
-
 export const selectIsProcessingLike = (state: RootState): boolean => 
-  state.ui.loadingStates.like.isLoading;
+  state.ui.loadingStates.video.isLoading;
 
 export const selectIsProcessingTip = (state: RootState): boolean => 
-  state.ui.loadingStates.tip.isLoading;
+  state.ui.loadingStates.metadata.isLoading;
 
 export const selectIsLoadingComments = (state: RootState): boolean => 
-  state.ui.loadingStates.comments.isLoading;
+  state.ui.loadingStates.video.isLoading;
 
 export const selectIsSubmittingComment = (state: RootState): boolean => 
-  state.ui.loadingStates.comments.isLoading;
-
-// Combined loading states selector
-export const selectCombinedLoadingState = (state: RootState) => ({
-  comments: state.ui.loadingStates.comments,
-  tip: state.ui.loadingStates.tip,
-  like: state.ui.loadingStates.like
-});
+  state.ui.loadingStates.video.isLoading;
 
 export const {
   toggleComments,

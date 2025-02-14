@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import { createLogger } from '../../utils/logger';
 import type { User } from '../../types/auth';
-import type { RootState } from '../';
+import type { RootState, AuthState } from '../types';
 import { 
   selectUser as selectFirebaseUser
 } from './firebase/selectors';
@@ -16,24 +16,31 @@ import { setUser } from './firebase/firebaseSlice';
 
 const logger = createLogger('AuthSlice');
 
-interface LoadingState {
-  isLoading: boolean;
-  isLoaded: boolean;
-  error: string | null;
-}
-
-interface AuthState {
-  isLoading: boolean;  // Currently loading
-  isLoaded: boolean;   // Successfully loaded
-  error: string | null; // Any error that occurred
-  isInitialized: boolean;
-}
-
 const initialState: AuthState = {
+  // LoadingState
   isLoading: false,
   isLoaded: false,
   error: null,
+  
+  // Auth State
   isInitialized: false,
+  isAuthenticated: false,
+  user: null,
+  
+  // Loading States
+  loadingStates: {
+    isInitializing: false,
+    isSigningIn: false,
+    isSigningUp: false,
+    isSigningOut: false
+  },
+  
+  // Error States
+  errors: {
+    signIn: undefined,
+    signUp: undefined,
+    signOut: undefined
+  }
 };
 
 // Initialize Auth
@@ -43,10 +50,10 @@ export const initializeAuth = createAsyncThunk(
     const state = getState() as RootState;
     
     // Skip if already initialized or initializing
-    if (state.auth.isInitialized || state.auth.isLoading) {
+    if (state.auth.isInitialized || state.auth.loadingStates.isInitializing) {
       logger.info('Auth already initialized or initializing, skipping', {
         isInitialized: state.auth.isInitialized,
-        isLoading: state.auth.isLoading
+        isInitializing: state.auth.loadingStates.isInitializing
       });
       return;
     }
@@ -93,22 +100,32 @@ const authSlice = createSlice({
   reducers: {
     clearError: (state) => {
       state.error = null;
+      state.errors = {
+        signIn: undefined,
+        signUp: undefined,
+        signOut: undefined
+      };
     },
+    setAuthenticated: (state, action) => {
+      state.isAuthenticated = action.payload;
+    }
   },
   extraReducers: (builder) => {
     builder
       // Initialize Auth
       .addCase(initializeAuth.pending, (state) => {
+        state.loadingStates.isInitializing = true;
         state.isLoading = true;
-        state.isLoaded = false;
         state.error = null;
       })
       .addCase(initializeAuth.fulfilled, (state) => {
         state.isInitialized = true;
+        state.loadingStates.isInitializing = false;
         state.isLoading = false;
         state.isLoaded = true;
       })
       .addCase(initializeAuth.rejected, (state, action) => {
+        state.loadingStates.isInitializing = false;
         state.isLoading = false;
         state.isLoaded = false;
         state.error = action.error.message || 'Failed to initialize auth';
@@ -116,67 +133,88 @@ const authSlice = createSlice({
 
       // Sign In
       .addCase(signIn.pending, (state) => {
+        state.loadingStates.isSigningIn = true;
         state.isLoading = true;
-        state.error = null;
+        state.errors.signIn = undefined;
       })
       .addCase(signIn.fulfilled, (state) => {
+        state.loadingStates.isSigningIn = false;
         state.isLoading = false;
         state.isLoaded = true;
+        state.isAuthenticated = true;
       })
       .addCase(signIn.rejected, (state, action) => {
+        state.loadingStates.isSigningIn = false;
         state.isLoading = false;
         state.isLoaded = false;
+        state.errors.signIn = action.error.message;
         state.error = action.error.message || 'Sign in failed';
       })
 
       // Sign Up
       .addCase(signUp.pending, (state) => {
+        state.loadingStates.isSigningUp = true;
         state.isLoading = true;
-        state.error = null;
+        state.errors.signUp = undefined;
       })
       .addCase(signUp.fulfilled, (state) => {
+        state.loadingStates.isSigningUp = false;
         state.isLoading = false;
         state.isLoaded = true;
+        state.isAuthenticated = true;
       })
       .addCase(signUp.rejected, (state, action) => {
+        state.loadingStates.isSigningUp = false;
         state.isLoading = false;
         state.isLoaded = false;
+        state.errors.signUp = action.error.message;
         state.error = action.error.message || 'Sign up failed';
       })
 
       // Sign Out
       .addCase(signOut.pending, (state) => {
+        state.loadingStates.isSigningOut = true;
         state.isLoading = true;
-        state.error = null;
+        state.errors.signOut = undefined;
       })
       .addCase(signOut.fulfilled, (state) => {
+        state.loadingStates.isSigningOut = false;
         state.isLoading = false;
         state.isLoaded = true;
+        state.isAuthenticated = false;
+        state.user = null;
       })
       .addCase(signOut.rejected, (state, action) => {
+        state.loadingStates.isSigningOut = false;
         state.isLoading = false;
         state.isLoaded = false;
+        state.errors.signOut = action.error.message;
         state.error = action.error.message || 'Sign out failed';
       })
 
       // Google Sign In
       .addCase(signInWithGoogle.pending, (state) => {
+        state.loadingStates.isSigningIn = true;
         state.isLoading = true;
-        state.error = null;
+        state.errors.signIn = undefined;
       })
       .addCase(signInWithGoogle.fulfilled, (state) => {
+        state.loadingStates.isSigningIn = false;
         state.isLoading = false;
         state.isLoaded = true;
+        state.isAuthenticated = true;
       })
       .addCase(signInWithGoogle.rejected, (state, action) => {
+        state.loadingStates.isSigningIn = false;
         state.isLoading = false;
         state.isLoaded = false;
+        state.errors.signIn = action.error.message;
         state.error = action.error.message || 'Google sign in failed';
       });
   },
 });
 
-export const { clearError } = authSlice.actions;
+export const { clearError, setAuthenticated } = authSlice.actions;
 
 // Selectors
 export const selectAuthState = createSelector(
@@ -184,10 +222,19 @@ export const selectAuthState = createSelector(
   (auth) => ({
     isLoading: auth.isLoading,
     isLoaded: auth.isLoaded,
-    error: auth.error
+    error: auth.error,
+    isInitialized: auth.isInitialized,
+    isAuthenticated: auth.isAuthenticated,
+    user: auth.user,
+    loadingStates: auth.loadingStates,
+    errors: auth.errors
   })
 );
+
 export const selectIsAuthInitialized = (state: RootState) => state.auth.isInitialized;
+export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;
+export const selectAuthLoadingStates = (state: RootState) => state.auth.loadingStates;
+export const selectAuthErrors = (state: RootState) => state.auth.errors;
 export const selectUser = selectFirebaseUser;
 
 export default authSlice.reducer; 

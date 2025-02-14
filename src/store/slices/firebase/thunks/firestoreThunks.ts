@@ -120,18 +120,39 @@ export const fetchVideoLikes = createAsyncThunk<Like[], string, ThunkConfig>(
   }
 );
 
-export const toggleLike = createAsyncThunk<{ action: 'add' | 'remove'; like?: Like; likeId?: string }, { videoId: string; userId: string; type?: 'like' | 'superLike' }, ThunkConfig>(
-  'firebase/firestore/toggleLike',
-  async ({ videoId, userId, type = 'like' }, { getState }: { getState: GetState }) => {
-    const { firestoreService } = getState().firebase;
+export const toggleLike = createAsyncThunk<
+  { action: 'add' | 'remove'; like?: Like; likeId?: string }, 
+  { videoId: string; userId: string; type?: 'like' | 'superLike' }, 
+  ThunkConfig
+>('firebase/firestore/toggleLike', async ({ videoId, userId, type = 'like' }, { getState }) => {
+  const { firestoreService } = getState().firebase;
 
-    if (!firestoreService) {
-      throw new Error('Firestore service not initialized');
-    }
-
-    return firestoreService.toggleLike(videoId, userId, type);
+  if (!firestoreService) {
+    throw new Error('Firestore service not initialized');
   }
-);
+
+  return firestoreService.toggleLike(videoId, userId, type);
+});
+
+// Dislike operations
+export const toggleDislike = createAsyncThunk<
+  { action: 'add' | 'remove'; dislike?: Dislike; dislikeId?: string },
+  { videoId: string; userId: string },
+  ThunkConfig
+>('firebase/firestore/toggleDislike', async ({ videoId, userId }, { getState }) => {
+  const { firestoreService } = getState().firebase;
+
+  if (!firestoreService) {
+    throw new Error('Firestore service not initialized');
+  }
+
+  const result = await firestoreService.toggleDislike(videoId, userId);
+  return {
+    action: result.data?.isDisliked ? 'add' : 'remove',
+    dislike: result.data?.dislike,
+    dislikeId: result.data?.dislike?.id
+  };
+});
 
 // Tip operations
 export const fetchVideoTips = createAsyncThunk<Tip[], string, ThunkConfig>(

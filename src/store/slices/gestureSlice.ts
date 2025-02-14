@@ -1,23 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { RootState } from '../types';
+import type { GestureState } from '../types';
 import { createLogger } from '../../utils/logger';
-import { RootState } from '../';
 
 const logger = createLogger('GestureSlice');
-
-interface LoadingState {
-  isLoading: boolean;  // Currently loading
-  isLoaded: boolean;   // Successfully loaded
-  error: string | null // Any error that occurred
-}
-
-interface GestureState extends LoadingState {
-  isDoubleTapEnabled: boolean;
-  isSwipeEnabled: boolean;
-  doubleTapSide: 'left' | 'right' | null;
-  swipeDirection: 'up' | 'down' | 'left' | 'right' | null;
-  gestureInProgress: boolean;
-  lastGestureTimestamp: number;
-}
 
 const initialState: GestureState = {
   // Loading state
@@ -131,11 +117,7 @@ export const {
 } = gestureSlice.actions;
 
 // Selectors
-export const selectGestureState = (state: RootState): LoadingState => ({
-  isLoading: state.gesture.isLoading,
-  isLoaded: state.gesture.isLoaded,
-  error: state.gesture.error
-});
+export const selectGestureState = (state: RootState): GestureState => state.gesture;
 
 export const selectGestureSettings = (state: RootState) => ({
   isDoubleTapEnabled: state.gesture.isDoubleTapEnabled,

@@ -15,9 +15,17 @@ const logger = createLogger('FeedScreen');
 type FeedScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export function FeedScreen() {
-  const { isLoading: authLoading, isInitialized: authInitialized, user } = useAuth();
+  const { 
+    isAuthenticated,
+    isInitialized: authInitialized,
+    loadingStates: authLoadingStates,
+    user,
+    errors: authErrors
+  } = useAuth();
+  
   const navigation = useNavigation<FeedScreenNavigationProp>();
   const dispatch = useAppDispatch();
+  
   const { 
     videos, 
     currentIndex, 
@@ -29,18 +37,18 @@ export function FeedScreen() {
 
   useEffect(() => {
     async function initializeFeed() {
-      if (!authInitialized || authLoading || !user) {
+      if (!authInitialized || authLoadingStates.isInitializing || !isAuthenticated) {
         logger.info('Not ready to initialize feed', {
           authInitialized,
-          authLoading,
-          hasUser: !!user
+          authLoadingStates,
+          isAuthenticated
         });
         return;
       }
 
       // Prevent duplicate calls by checking if we're already loading or if there's an error
       if (!videoInitialized && !isLoading && !error) {
-        logger.info('Initializing video feed', { userId: user.uid });
+        logger.info('Initializing video feed', { userId: user?.uid });
         try {
           const result = await dispatch(initializeVideoBuffer()).unwrap();
           logger.info('Video feed initialized successfully', {
@@ -70,19 +78,31 @@ export function FeedScreen() {
     }
 
     initializeFeed();
-  }, [authInitialized, authLoading, user, dispatch, videoInitialized, isLoading, videos.length, currentIndex, error]);
+  }, [
+    authInitialized,
+    authLoadingStates.isInitializing,
+    isAuthenticated,
+    user,
+    dispatch,
+    videoInitialized,
+    isLoading,
+    videos.length,
+    currentIndex,
+    error
+  ]);
 
   // If not authenticated, redirect to auth screen
-  if (authInitialized && !user) {
-    logger.info('No user found, redirecting to auth');
+  if (authInitialized && !isAuthenticated) {
+    logger.info('Not authenticated, redirecting to auth');
     navigation.replace('AuthStack');
     return null;
   }
 
-  if (!authInitialized || authLoading || isLoading) {
+  // Show loading state while initializing
+  if (!authInitialized || authLoadingStates.isInitializing || isLoading) {
     logger.debug('Showing loading state', {
       authInitialized,
-      authLoading,
+      authLoadingStates,
       isLoading,
       videoCount: videos.length
     });
@@ -93,8 +113,21 @@ export function FeedScreen() {
     );
   }
 
+  // Show auth errors if any
+  if (authErrors.signIn || authErrors.signUp) {
+    logger.error('Auth error state', { authErrors });
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>
+          {authErrors.signIn || authErrors.signUp}
+        </Text>
+      </View>
+    );
+  }
+
+  // Show video errors if any
   if (error) {
-    logger.error('Rendering error state', { 
+    logger.error('Video error state', { 
       error,
       videoCount: videos.length,
       currentIndex,
@@ -107,6 +140,7 @@ export function FeedScreen() {
     );
   }
 
+  // Show empty state if no videos
   if (!videos.length) {
     logger.warn('No videos available', {
       videoCount: videos.length,

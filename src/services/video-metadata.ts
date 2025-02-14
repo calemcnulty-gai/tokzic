@@ -1,4 +1,4 @@
-import { Collections, VideoMetadata, Comment, Like, Tip } from '../types/firestore';
+import { Collections, VideoMetadata, Comment, Like, Tip, NewLike } from '../types/firestore';
 import { createLogger } from '../utils/logger';
 import { 
   collection, 
@@ -163,17 +163,16 @@ export class VideoMetadataService {
       logger.info(`Fetching comments for video: ${videoId}`);
       
       const commentsRef = collection(db, Collections.COMMENTS);
-      const constraints = [
+      let q = query(commentsRef,
         where('videoId', '==', videoId),
         orderBy('createdAt', 'desc'),
         limit(limitCount)
-      ];
+      );
 
       if (startAfter) {
-        constraints.push(firestoreStartAfter(startAfter));
+        q = query(q, firestoreStartAfter(startAfter));
       }
 
-      const q = query(commentsRef, ...constraints);
       const snapshot = await getDocs(q);
       const comments = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -337,7 +336,7 @@ export class VideoMetadataService {
         return false;
       } else {
         // Like: Add like document and increment count
-        const like: Like = {
+        const like: NewLike = {
           videoId,
           userId,
           type,

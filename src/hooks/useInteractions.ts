@@ -4,7 +4,9 @@ import {
   selectInteractionState,
   selectVideoComments,
   selectVideoLikes,
-  selectVideoTips,
+  selectVideoTips
+} from '../store/selectors/interactionSelectors';
+import {
   fetchVideoComments,
   addComment,
   toggleLike,

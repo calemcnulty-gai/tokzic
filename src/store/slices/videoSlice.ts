@@ -1,32 +1,24 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { videoService } from '../../services/video';
 import { VideoWithMetadata } from '../../types/video';
-import { VideoMetadata, Comment } from '../../types/firestore';
+import { VideoMetadata } from '../../types/firestore';
 import { createLogger } from '../../utils/logger';
 import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { videoCacheManager } from '../../services/video-cache';
 import { 
   fetchVideoMetadata as fetchVideoMetadataThunk,
-  fetchVideoComments as fetchVideoCommentsThunk,
-  addVideoComment,
-  toggleVideoLike,
-  toggleVideoDislike,
   incrementVideoView
 } from '../thunks/videoThunks';
 import { createSwipe } from '../../services/swipe';
-import { RootState } from '../../store';
+import type { RootState } from '../../store';
 import { SwipeDirection } from '../../components/SwipeableVideoPlayer';
 import type { AVPlaybackStatus, AVPlaybackStatusSuccess } from 'expo-av';
 import { createSelector } from '@reduxjs/toolkit';
-import {
-  toggleLike as toggleLikeThunk,
-  fetchVideoLikes as fetchVideoLikesThunk,
-  fetchVideoTips as fetchVideoTipsThunk
-} from '../slices/firebase/thunks/firestoreThunks';
 import { selectUser } from '../slices/firebase/selectors';
-import { AppDispatch } from '../../store';
+import type { AppDispatch } from '../../store';
 import { ThunkDispatch, AnyAction } from '@reduxjs/toolkit';
 import { generationService } from '../../services/generation';
+import type { ThunkConfig } from '../types';
 
 const logger = createLogger('VideoSlice');
 
@@ -43,16 +35,7 @@ interface LoadingState {
 
 interface VideoLoadingStates {
   metadata: LoadingState;
-  comments: LoadingState;
-  likes: LoadingState;
-  tips: LoadingState;
   video: LoadingState;
-}
-
-interface VideoInteractionState {
-  isLiked: boolean;
-  isDisliked: boolean;
-  comments: Comment[];
 }
 
 interface VideoPlayerState {
@@ -73,19 +56,13 @@ interface VideoState extends LoadingState {
   isAtStart: boolean;
   isAtEnd: boolean;
   isInitialized: boolean;
-  isVideosLoaded: boolean;  // New flag to track if videos are loaded
-  isMetadataLoaded: boolean;  // New flag to track if metadata is loaded
+  isVideosLoaded: boolean;
+  isMetadataLoaded: boolean;
   loadingStates: VideoLoadingStates;
   errors: {
     metadata?: string;
-    comments?: string;
-    like?: string;
-    dislike?: string;
     view?: string;
     generation?: string;
-  };
-  interactions: {
-    [videoId: string]: VideoInteractionState;
   };
   swipeState: {
     isSwipeInProgress: boolean;
@@ -96,7 +73,7 @@ interface VideoState extends LoadingState {
     activeIndex: number;
     mountTime: number;
     lastIndexChangeTime: number;
-    pendingGenerations: string[]; // Track pending generation IDs
+    pendingGenerations: string[];
   };
 }
 
@@ -119,13 +96,9 @@ const initialState: VideoState = {
   isMetadataLoaded: false,
   loadingStates: {
     metadata: { isLoading: false, isLoaded: false, error: null },
-    comments: { isLoading: false, isLoaded: false, error: null },
-    likes: { isLoading: false, isLoaded: false, error: null },
-    tips: { isLoading: false, isLoaded: false, error: null },
     video: { isLoading: false, isLoaded: false, error: null }
   },
   errors: {},
-  interactions: {},
   swipeState: {
     isSwipeInProgress: false,
     lastSwipeTime: 0,
@@ -142,7 +115,7 @@ const initialState: VideoState = {
     activeIndex: 0,
     mountTime: Date.now(),
     lastIndexChangeTime: Date.now(),
-    pendingGenerations: [], // Initialize empty array
+    pendingGenerations: [],
   },
 };
 
@@ -283,11 +256,6 @@ export const rotateForward = createAsyncThunk(
               try {
                 // Use the video service to fetch each video, which will handle all initialization
                 const video = await videoService.fetchVideoById(videoId);
-                
-                // Initialize video interactions state
-                if (!state.video.interactions[videoId]) {
-                  dispatch(initializeVideoInteractions({ videoId }));
-                }
                 
                 // Preload the video
                 if (video.video.url) {
@@ -554,77 +522,6 @@ export const handleSwipeGesture = createAsyncThunk(
   }
 );
 
-export const handleCommentSubmission = createAsyncThunk(
-  'video/submitComment',
-  async ({ text }: { text: string }, { getState, dispatch }) => {
-    const state = getState() as RootState;
-    const user = selectUser(state);
-    const { currentVideo } = state.video;
-
-    if (!user || !currentVideo) {
-      logger.warn('Comment submission ignored', {
-        reason: !user ? 'no user' : 'no video'
-      });
-      return;
-    }
-
-    try {
-      await dispatch(addVideoComment({
-        videoId: currentVideo.video.id,
-        userId: user.uid,
-        text,
-        userInfo: {
-          username: user.displayName || 'Anonymous',
-          avatarUrl: user.photoURL || undefined,
-        }
-      })).unwrap();
-    } catch (error) {
-      logger.error('Error submitting comment', { error });
-      throw error;
-    }
-  }
-);
-
-// Action creators for video likes/dislikes
-export const handleVideoLike = createAsyncThunk(
-  'video/handleLike',
-  async ({ videoId }: { videoId: string }, { dispatch, getState }) => {
-    const state = getState() as RootState;
-    const user = selectUser(state);
-    
-    if (!user) {
-      throw new Error('Must be logged in to like videos');
-    }
-
-    try {
-      const result = await (dispatch as any)(toggleLikeThunk({ videoId, userId: user.uid }));
-      await result.unwrap();
-    } catch (error) {
-      logger.error('Error handling video like', { error });
-      throw error;
-    }
-  }
-);
-
-export const handleVideoDislike = createAsyncThunk(
-  'video/handleDislike',
-  async ({ videoId }: { videoId: string }, { dispatch, getState }) => {
-    const state = getState() as RootState;
-    const user = selectUser(state);
-    
-    if (!user) {
-      throw new Error('Must be logged in to dislike videos');
-    }
-
-    try {
-      await dispatch(toggleVideoDislike({ videoId, userId: user.uid })).unwrap();
-    } catch (error) {
-      logger.error('Error handling video dislike', { error });
-      throw error;
-    }
-  }
-);
-
 export const handlePlaybackStatusUpdate = createAsyncThunk(
   'video/handlePlaybackStatus',
   async (status: AVPlaybackStatus) => {
@@ -673,9 +570,6 @@ export const handleGeneratedVideo = createAsyncThunk(
         hasMetadata: !!videoWithMetadata.metadata 
       });
 
-      // Initialize video interactions state
-      dispatch(initializeVideoInteractions({ videoId }));
-      
       // Preload the video
       if (videoWithMetadata.video.url) {
         logger.info('Preloading generated video', { videoId });
@@ -741,15 +635,6 @@ const videoSlice = createSlice({
     clearSpecificError(state, action: PayloadAction<keyof VideoState['errors']>) {
       if (state.errors[action.payload]) {
         delete state.errors[action.payload];
-      }
-    },
-    initializeVideoInteractions(state, action: PayloadAction<{ videoId: string }>) {
-      if (!state.interactions[action.payload.videoId]) {
-        state.interactions[action.payload.videoId] = {
-          isLiked: false,
-          isDisliked: false,
-          comments: []
-        };
       }
     },
     setCurrentVideo: (state, action: PayloadAction<VideoWithMetadata>) => {
@@ -846,18 +731,6 @@ const videoSlice = createSlice({
         state.isVideosLoaded = true;
         state.isMetadataLoaded = true;
         state.player.isPlaying = true;
-
-        // Initialize interactions for the current video
-        if (state.currentVideo) {
-          const videoId = state.currentVideo.video.id;
-          if (!state.interactions[videoId]) {
-            state.interactions[videoId] = {
-              isLiked: false,
-              isDisliked: false,
-              comments: []
-            };
-          }
-        }
       })
       .addCase(initializeVideoBuffer.rejected, (state, action) => {
         logger.error('Video buffer initialization rejected', {
@@ -900,9 +773,6 @@ const videoSlice = createSlice({
           // Update loading states for the new videos
           state.loadingStates.metadata = { isLoading: false, isLoaded: true, error: null };
           state.loadingStates.video = { isLoading: false, isLoaded: true, error: null };
-          state.loadingStates.comments = { isLoading: false, isLoaded: false, error: null };
-          state.loadingStates.likes = { isLoading: false, isLoaded: false, error: null };
-          state.loadingStates.tips = { isLoading: false, isLoaded: false, error: null };
           
           state.videos = action.payload.videos;
           state.currentIndex = 0;
@@ -1028,112 +898,6 @@ const videoSlice = createSlice({
         state.errors.metadata = action.error.message || 'Failed to fetch video metadata';
       })
 
-      // Fetch Video Comments
-      .addCase(fetchVideoCommentsThunk.pending, (state) => {
-        state.loadingStates.comments.isLoading = true;
-        delete state.errors.comments;
-      })
-      .addCase(fetchVideoCommentsThunk.fulfilled, (state, action) => {
-        state.loadingStates.comments.isLoading = false;
-        state.loadingStates.comments.isLoaded = true;
-        if (!state.interactions[action.payload.videoId]) {
-          state.interactions[action.payload.videoId] = {
-            isLiked: false,
-            isDisliked: false,
-            comments: []
-          };
-        }
-        state.interactions[action.payload.videoId].comments = action.payload.comments;
-      })
-      .addCase(fetchVideoCommentsThunk.rejected, (state, action) => {
-        state.loadingStates.comments.isLoading = false;
-        state.loadingStates.comments.isLoaded = false;
-        state.errors.comments = action.error.message || 'Failed to fetch comments';
-      })
-
-      // Add Video Comment
-      .addCase(addVideoComment.pending, (state) => {
-        state.loadingStates.comments.isLoading = true;
-        state.errors.comments = undefined;
-      })
-      .addCase(addVideoComment.fulfilled, (state, action) => {
-        state.loadingStates.comments.isLoading = false;
-        state.loadingStates.comments.isLoaded = true;
-        if (!state.interactions[action.payload.videoId]) {
-          state.interactions[action.payload.videoId] = {
-            isLiked: false,
-            isDisliked: false,
-            comments: []
-          };
-        }
-        state.interactions[action.payload.videoId].comments.unshift({
-          id: Date.now().toString(),
-          text: action.payload.text,
-          userId: action.payload.userId,
-          username: action.payload.userInfo.username,
-          avatarUrl: action.payload.userInfo.avatarUrl,
-          timestamp: Date.now(),
-          videoId: action.payload.videoId
-        });
-      })
-      .addCase(addVideoComment.rejected, (state, action) => {
-        state.loadingStates.comments.isLoading = false;
-        state.loadingStates.comments.isLoaded = false;
-        state.errors.comments = action.error.message || 'Failed to add comment';
-      })
-
-      // Toggle Video Like
-      .addCase(toggleVideoLike.pending, (state) => {
-        state.loadingStates.likes.isLoading = true;
-        delete state.errors.like;
-      })
-      .addCase(toggleVideoLike.fulfilled, (state, action) => {
-        state.loadingStates.likes.isLoading = false;
-        state.loadingStates.likes.isLoaded = true;
-        if (!state.interactions[action.payload.videoId]) {
-          state.interactions[action.payload.videoId] = {
-            isLiked: false,
-            isDisliked: false,
-            comments: []
-          };
-        }
-        state.interactions[action.payload.videoId].isLiked = action.payload.isLiked;
-        if (action.payload.isLiked) {
-          state.interactions[action.payload.videoId].isDisliked = false;
-        }
-      })
-      .addCase(toggleVideoLike.rejected, (state, action) => {
-        state.loadingStates.likes.isLoading = false;
-        state.loadingStates.likes.isLoaded = false;
-        state.errors.like = action.error.message || 'Failed to toggle like';
-      })
-
-      // Toggle Video Dislike
-      .addCase(toggleVideoDislike.pending, (state) => {
-        state.loadingStates.likes.isLoading = true;
-        delete state.errors.dislike;
-      })
-      .addCase(toggleVideoDislike.fulfilled, (state, action) => {
-        state.loadingStates.likes.isLoading = false;
-        state.loadingStates.likes.isLoaded = true;
-        if (!state.interactions[action.payload.videoId]) {
-          state.interactions[action.payload.videoId] = {
-            isLiked: false,
-            isDisliked: false,
-            comments: []
-          };
-        }
-        state.interactions[action.payload.videoId].isDisliked = action.payload.isDisliked;
-        if (action.payload.isDisliked) {
-          state.interactions[action.payload.videoId].isLiked = false;
-        }
-      })
-      .addCase(toggleVideoDislike.rejected, (state, action) => {
-        state.loadingStates.likes.isLoading = false;
-        state.loadingStates.likes.isLoaded = false;
-        state.errors.dislike = action.error.message || 'Failed to toggle dislike';
-      })
-
       // Increment Video View
       .addCase(incrementVideoView.pending, (state) => {
         state.loadingStates.video.isLoading = true;
@@ -1226,7 +990,7 @@ const videoSlice = createSlice({
       .addCase(handleGeneratedVideo.pending, (state) => {
         logger.info('Starting to handle generated video');
         state.isLoading = true;
-        state.error = undefined;
+        state.error = null;
         state.errors.generation = undefined;
       })
       .addCase(handleGeneratedVideo.fulfilled, (state, action) => {
@@ -1253,9 +1017,6 @@ const videoSlice = createSlice({
         // Initialize loading states for the new video
         state.loadingStates.metadata = { isLoading: false, isLoaded: true, error: null };
         state.loadingStates.video = { isLoading: false, isLoaded: true, error: null };
-        state.loadingStates.comments = { isLoading: false, isLoaded: false, error: null };
-        state.loadingStates.likes = { isLoading: false, isLoaded: false, error: null };
-        state.loadingStates.tips = { isLoading: false, isLoaded: false, error: null };
 
         logger.info('Successfully inserted generated video', {
           newQueueSize: newVideos.length,
@@ -1279,7 +1040,7 @@ const videoSlice = createSlice({
       .addCase(handleGeneratedVideo.rejected, (state, action) => {
         logger.error('Failed to handle generated video', { error: action.error });
         state.isLoading = false;
-        state.error = action.error.message;
+        state.error = action.error.message || null;
         state.errors.generation = action.error.message;
       })
 
@@ -1310,7 +1071,6 @@ export const selectLoadingState = (state: RootState): LoadingState => ({
 });
 
 export const selectVideoLoadingStates = (state: RootState) => state.video.loadingStates;
-export const selectVideoInteractions = (state: RootState) => state.video.interactions;
 export const selectVideoPlayer = (state: RootState) => state.video.player;
 export const selectVideoFeed = (state: RootState) => state.video.feed;
 
@@ -1318,44 +1078,6 @@ export const selectVideoFeed = (state: RootState) => state.video.feed;
 export const selectCurrentVideo = createSelector(
   [selectVideoState],
   (videoState) => videoState.currentVideo
-);
-
-export const selectVideoComments = createSelector(
-  [selectVideoInteractions, (_, videoId: string) => videoId],
-  (interactions, videoId) => interactions[videoId]?.comments || []
-);
-
-export const selectIsLoadingComments = createSelector(
-  [selectVideoState],
-  (videoState) => videoState.loadingStates.comments.isLoading
-);
-
-export const selectCommentsVisibility = createSelector(
-  [(state: RootState) => state.ui],
-  (ui) => ui.isCommentsVisible
-);
-
-export const selectSwipeState = createSelector(
-  [selectVideoState],
-  (videoState) => videoState.swipeState
-);
-
-export const selectVideoLikeStatus = createSelector(
-  [selectVideoInteractions, (_, videoId: string) => videoId],
-  (interactions, videoId) => ({
-    isLiked: interactions[videoId]?.isLiked || false,
-    isDisliked: interactions[videoId]?.isDisliked || false,
-  })
-);
-
-export const selectIsProcessingLike = createSelector(
-  [selectVideoState],
-  (videoState) => videoState.loadingStates.likes.isLoading
-);
-
-export const selectIsProcessingTip = createSelector(
-  [selectVideoState],
-  (videoState) => videoState.loadingStates.tips.isLoading
 );
 
 export const selectPlaybackState = createSelector(
@@ -1391,7 +1113,6 @@ export const selectIsVideoDataReady = createSelector(
 export const {
   clearError,
   clearSpecificError,
-  initializeVideoInteractions,
   setCurrentVideo,
   setPlaying,
   setMuted,

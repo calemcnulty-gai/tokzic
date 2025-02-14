@@ -5,27 +5,39 @@ import { AuthStack } from './AuthStack';
 import { MainStack } from './MainStack';
 import { useAuth } from '../hooks/useAuth';
 import { createLogger } from '../utils/logger';
+import { ActivityIndicator, View } from 'react-native';
 
 const logger = createLogger('RootNavigator');
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const RootNavigator = () => {
-  const { user, isInitialized } = useAuth();
+  const { 
+    isAuthenticated, 
+    isInitialized,
+    loadingStates,
+    user
+  } = useAuth();
 
-  // Wait for auth to initialize before rendering
-  if (!isInitialized) {
-    return null;
+  // Show loading state while auth is initializing
+  if (!isInitialized || loadingStates.isInitializing) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
   logger.debug('Rendering root navigator', { 
-    isAuthenticated: !!user,
-    userId: user?.uid
+    isAuthenticated,
+    isInitialized,
+    userId: user?.uid,
+    loadingStates
   });
 
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {user ? (
+        {isAuthenticated ? (
           <Stack.Screen 
             name="MainStack" 
             component={MainStack}

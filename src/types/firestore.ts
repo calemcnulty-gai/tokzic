@@ -1,6 +1,15 @@
-export interface VideoMetadata {
-  id: string;
+// Base type for new Firestore documents
+export interface NewDocument {
   createdAt: number;
+}
+
+// Base type for stored Firestore documents
+export interface StoredDocument extends NewDocument {
+  id: string;
+}
+
+// Video metadata types
+export interface NewVideoMetadata extends NewDocument {
   creatorId: string;
   title?: string;
   description?: string;
@@ -19,50 +28,57 @@ export interface VideoMetadata {
   };
 }
 
-export interface Comment {
-  id: string;
+export interface VideoMetadata extends StoredDocument, NewVideoMetadata {}
+
+// Comment types
+export interface NewComment extends NewDocument {
   text: string;
   userId: string;
   username: string;
   avatarUrl?: string;
-  timestamp: number;
   videoId: string;
 }
 
-export interface Like {
-  id: string;
+export interface Comment extends StoredDocument, NewComment {}
+
+// Like types
+export interface NewLike extends NewDocument {
   videoId: string;
   userId: string;
   type: 'like' | 'superLike';
-  createdAt: number;
 }
 
-export interface Dislike {
-  id: string;
+export interface Like extends StoredDocument, NewLike {}
+
+// Dislike types
+export interface NewDislike extends NewDocument {
   videoId: string;
   userId: string;
   type: 'dislike' | 'superDislike';
-  createdAt: number;
 }
 
-export interface Tip {
-  id: string;
+export interface Dislike extends StoredDocument, NewDislike {}
+
+// Tip types
+export interface NewTip extends NewDocument {
   videoId: string;
   fromUserId: string;
   toUserId: string;
   amount: number;
   message?: string;
-  createdAt: number;
   type: 'regular' | 'toxic';
 }
 
-export interface Swipe {
-  id: string;
+export interface Tip extends StoredDocument, NewTip {}
+
+// Swipe types
+export interface NewSwipe extends NewDocument {
   videoId: string;
   userId: string;
   direction: 'left' | 'right';
-  createdAt: number;
 }
+
+export interface Swipe extends StoredDocument, NewSwipe {}
 
 export enum Collections {
   VIDEOS = 'videos',

@@ -21,10 +21,10 @@ import {
   selectIsLoadingComments,
   selectIsSubmittingComment
 } from '../../store/slices/uiSlice';
+import { selectVideoComments } from '../../store/selectors/interactionSelectors';
 import {
-  handleCommentSubmission,
-  selectVideoComments
-} from '../../store/slices/videoSlice';
+  handleCommentSubmission
+} from '../../store/slices/interactionSlice';
 import { AnyAction, ThunkDispatch } from '@reduxjs/toolkit';
 import { RootState } from '../../store';
 

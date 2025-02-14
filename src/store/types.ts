@@ -1,23 +1,21 @@
 import type { ThunkAction, Action } from '@reduxjs/toolkit';
 import type { ThunkDispatch } from 'redux-thunk';
+import type { WritableDraft } from 'immer/dist/types/types-external';
 
 // Firebase types
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
-import type { Firestore, QueryDocumentSnapshot } from 'firebase/firestore';
+import type { Firestore, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import type { FirebaseStorage } from 'firebase/storage';
 import type { Analytics } from 'firebase/analytics';
+import type { User } from '../types/auth';
 
 // Internal types
 import type { RouteType } from './slices/navigationSlice';
 import type { VideoData, VideoWithMetadata } from '../types/video';
-import type { 
-  VideoMetadata, 
-  Comment, 
-  Like, 
-  Dislike, 
-  Tip
-} from '../types/firestore';
+import type { VideoMetadata, Comment, Like, Dislike, Tip } from '../types/firestore';
+import type { InteractionLoadingState } from '../types/interactions';
+import type { UIState } from './slices/uiSlice';
 import type {
   FirestoreService,
   StorageService,
@@ -30,13 +28,13 @@ export interface RootState {
   video: VideoState;
   gesture: GestureState;
   navigation: NavigationState;
-  interaction: InteractionState;
+  interaction: import('../types/interactions').InteractionState;
   ui: UIState;
   firebase: FirebaseState;
 }
 
 // Firebase State Type
-export interface FirebaseState {
+export interface FirebaseState extends LoadingState {
   app: FirebaseApp | null;
   auth: Auth | null;
   db: Firestore | null;
@@ -44,11 +42,12 @@ export interface FirebaseState {
   analytics: Analytics | null;
   isInitialized: boolean;
   isInitializing: boolean;
-  error: string | null;
+  user: User | null;
   authService: AuthService | null;
   firestoreService: FirestoreService | null;
   storageService: StorageService | null;
   cache: CacheState;
+  uploadProgress: Record<string, number>;
   loadingStates: {
     auth: {
       isInitializing: boolean;
@@ -85,13 +84,11 @@ export interface LoadingState {
 }
 
 // Video State
-export interface VideoState {
+export interface VideoState extends LoadingState {
   videos: VideoWithMetadata[];
   currentVideo: VideoWithMetadata | null;
   currentIndex: number;
-  lastVisible: QueryDocumentSnapshot<unknown> | null;
-  isLoading: boolean;
-  isLoaded: boolean;
+  lastVisible: QueryDocumentSnapshot<DocumentData> | null;
   isRefreshing: boolean;
   isAtStart: boolean;
   isAtEnd: boolean;
@@ -100,21 +97,11 @@ export interface VideoState {
   isMetadataLoaded: boolean;
   loadingStates: {
     metadata: LoadingState;
-    comments: LoadingState;
-    likes: LoadingState;
-    tips: LoadingState;
     video: LoadingState;
   };
-  error: string | null;
   errors: {
     metadata?: string;
-    comments?: string;
-    like?: string;
-    dislike?: string;
     view?: string;
-  };
-  interactions: {
-    [videoId: string]: VideoInteractionState;
   };
   swipeState: {
     isSwipeInProgress: boolean;
@@ -125,6 +112,7 @@ export interface VideoState {
     activeIndex: number;
     mountTime: number;
     lastIndexChangeTime: number;
+    pendingGenerations: string[];
   };
 }
 
@@ -138,16 +126,9 @@ export interface VideoPlayerState {
   isBuffering: boolean;
 }
 
-// Video Interaction State
-export interface VideoInteractionState {
-  isLiked: boolean;
-  isDisliked: boolean;
-  comments: Comment[];
-}
-
 // Cache State
 export interface CacheState {
-  documents: Record<string, CacheEntry<any>>;
+  documents: Record<string, CacheEntry<DocumentData>>;
   metadata: Record<string, CacheEntry<VideoMetadata>>;
   comments: Record<string, CacheEntry<Comment[]>>;
   likes: Record<string, CacheEntry<Like[]>>;
@@ -161,15 +142,25 @@ export interface CacheEntry<T> {
 }
 
 // Auth State
-export interface AuthState {
-  isLoading: boolean;
-  error: string | null;
-  isInitialized: boolean;
-  isAuthenticated: boolean;
+export interface AuthState extends LoadingState {
+  isInitialized: boolean;      // Whether auth has been initialized
+  isAuthenticated: boolean;    // Whether user is authenticated
+  user: User | null;           // Current user
+  loadingStates: {
+    isInitializing: boolean;   // Auth system is initializing
+    isSigningIn: boolean;      // Sign in is in progress
+    isSigningUp: boolean;      // Sign up is in progress
+    isSigningOut: boolean;     // Sign out is in progress
+  };
+  errors: {
+    signIn?: string;          // Sign in error if any
+    signUp?: string;          // Sign up error if any
+    signOut?: string;         // Sign out error if any
+  };
 }
 
 // Gesture State
-export interface GestureState {
+export interface GestureState extends LoadingState {
   isDoubleTapEnabled: boolean;
   isSwipeEnabled: boolean;
   doubleTapSide: 'left' | 'right' | null;
@@ -179,41 +170,13 @@ export interface GestureState {
 }
 
 // Navigation State
-export interface NavigationState {
+export interface NavigationState extends LoadingState {
   currentRoute: RouteType;
   previousRoute: RouteType | null;
   navigationHistory: RouteType[];
   deepLinkPending: string | null;
   isNavigating: boolean;
   authRequiredRoutes: RouteType[];
-}
-
-// Interaction State
-export interface InteractionState {
-  comments: Record<string, Comment[]>;
-  likes: Record<string, Like[]>;
-  dislikes: Record<string, Dislike[]>;
-  tips: Record<string, Tip[]>;
-  isLoading: boolean;
-  error: string | null;
-}
-
-// UI State
-export interface UIState {
-  theme: 'light' | 'dark';
-  isFullscreen: boolean;
-  isSidebarOpen: boolean;
-  isCommentsVisible: boolean;
-  isOverlayVisible: boolean;
-  isTipSelectorVisible: boolean;
-  activeModal: string | null;
-  toasts: Toast[];
-  loadingStates: {
-    isLoadingComments: boolean;
-    isSubmittingComment: boolean;
-    isProcessingTip: boolean;
-    isProcessingLike: boolean;
-  };
 }
 
 export interface Toast {

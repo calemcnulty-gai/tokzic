@@ -8,11 +8,10 @@ import {
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { createLogger } from '../../../utils/logger';
-import type { RootState } from '../../types';
+import type { RootState, FirebaseState } from '../../types';
 import type { User } from '../../../types/auth';
 import { mapFirebaseUser } from '../../../types/auth';
 import { serviceManager } from './services/ServiceManager';
-import type { CacheState } from '../../types';
 import {
   FIREBASE_API_KEY,
   FIREBASE_AUTH_DOMAIN,
@@ -21,56 +20,28 @@ import {
   FIREBASE_MESSAGING_SENDER_ID,
   FIREBASE_APP_ID,
 } from '@env';
+import { AppDispatch } from '../../types';
 
 const logger = createLogger('FirebaseSlice');
 
-// Standard loading state interface
-interface LoadingState {
-  isLoading: boolean;
-  isLoaded: boolean;
-  error: string | null;
-}
-
-export type FirebaseState = {
-  isInitialized: boolean;
-  isInitializing: boolean;
-  error: string | null;
-  user: User | null;
-  cache: CacheState;
-  uploadProgress: Record<string, number>;
-  loadingStates: {
-    auth: {
-      isInitializing: boolean;
-      isSigningIn: boolean;
-      isSigningUp: boolean;
-      isSigningOut: boolean;
-    };
-    firestore: {
-      isFetching: boolean;
-      isUpdating: boolean;
-      isDeleting: boolean;
-      isBatchProcessing: boolean;
-    };
-    storage: {
-      isUploading: boolean;
-      isDownloading: boolean;
-      isDeleting: boolean;
-      isListing: boolean;
-      isUpdatingMetadata: boolean;
-    };
-    analytics: {
-      isLoggingEvent: boolean;
-      isUpdatingUserProperties: boolean;
-      isTrackingScreen: boolean;
-    };
-  };
-}
-
 const initialState: FirebaseState = {
+  // LoadingState
+  isLoading: false,
+  isLoaded: false,
+  error: null,
+  
+  // Firebase state
   isInitialized: false,
   isInitializing: false,
-  error: null,
+  app: null,
+  auth: null,
+  db: null,
+  storage: null,
+  analytics: null,
   user: null,
+  authService: null,
+  firestoreService: null,
+  storageService: null,
   cache: {
     documents: {},
     metadata: {},
@@ -122,7 +93,7 @@ export const setUser = createAction<User | null>('firebase/setUser');
 
 // Action creators
 export const initializeFirebase = () => {
-  return async (dispatch: any) => {
+  return async (dispatch: AppDispatch) => {
     dispatch(initializeFirebaseStart());
     
     try {
@@ -188,7 +159,7 @@ const firebaseSlice = createSlice({
         state.isInitialized = false;
         state.error = action.payload;
       })
-      .addCase(setUser, (state, action) => {
+      .addCase(setUser, (state, action: PayloadAction<User | null>) => {
         state.loadingStates.auth.isInitializing = false;
         state.user = action.payload;
       });

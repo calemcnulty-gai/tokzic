@@ -4,6 +4,9 @@ import {
   selectAuthState, 
   selectUser,
   selectIsAuthInitialized,
+  selectIsAuthenticated,
+  selectAuthLoadingStates,
+  selectAuthErrors,
   initializeAuth,
   signOut,
   signIn,
@@ -21,6 +24,18 @@ const logger = createLogger('useAuth');
 interface UseAuthResult extends LoadingState {
   user: User | null;
   isInitialized: boolean;
+  isAuthenticated: boolean;
+  loadingStates: {
+    isInitializing: boolean;
+    isSigningIn: boolean;
+    isSigningUp: boolean;
+    isSigningOut: boolean;
+  };
+  errors: {
+    signIn?: string;
+    signUp?: string;
+    signOut?: string;
+  };
   signIn: (credentials: { email: string; password: string }) => Promise<void>;
   signUp: (credentials: { email: string; password: string }) => Promise<void>;
   signOut: () => Promise<void>;
@@ -32,43 +47,69 @@ export function useAuth(): UseAuthResult {
   const authState = useSelector(selectAuthState);
   const user = useSelector(selectUser);
   const isInitialized = useSelector(selectIsAuthInitialized);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const loadingStates = useSelector(selectAuthLoadingStates);
+  const errors = useSelector(selectAuthErrors);
 
   const load = useCallback(() => {
-    if (!isInitialized) {
+    if (!isInitialized && !loadingStates.isInitializing) {
       logger.info('Initializing auth');
       return dispatch(initializeAuth());
     }
     return Promise.resolve();
-  }, [dispatch, isInitialized]);
+  }, [dispatch, isInitialized, loadingStates.isInitializing]);
 
   // Use the standard loading state pattern
   const loadingState = useLoadingState(authState, load);
 
   // Auth methods
   const handleSignIn = useCallback(async (credentials: { email: string; password: string }) => {
+    if (loadingStates.isSigningIn) {
+      logger.warn('Sign in already in progress');
+      return;
+    }
+    
     logger.info('Signing in', { email: credentials.email });
     await dispatch(signIn(credentials));
-  }, [dispatch]);
+  }, [dispatch, loadingStates.isSigningIn]);
 
   const handleSignUp = useCallback(async (credentials: { email: string; password: string }) => {
+    if (loadingStates.isSigningUp) {
+      logger.warn('Sign up already in progress');
+      return;
+    }
+
     logger.info('Signing up', { email: credentials.email });
     await dispatch(signUp(credentials));
-  }, [dispatch]);
+  }, [dispatch, loadingStates.isSigningUp]);
 
   const handleSignOut = useCallback(async () => {
+    if (loadingStates.isSigningOut) {
+      logger.warn('Sign out already in progress');
+      return;
+    }
+
     logger.info('Signing out');
     await dispatch(signOut());
-  }, [dispatch]);
+  }, [dispatch, loadingStates.isSigningOut]);
 
   const handleGoogleSignIn = useCallback(async () => {
+    if (loadingStates.isSigningIn) {
+      logger.warn('Google sign in already in progress');
+      return;
+    }
+
     logger.info('Signing in with Google');
     await dispatch(signInWithGoogle());
-  }, [dispatch]);
+  }, [dispatch, loadingStates.isSigningIn]);
 
   return {
     ...loadingState,
     user,
     isInitialized,
+    isAuthenticated,
+    loadingStates,
+    errors,
     signIn: handleSignIn,
     signUp: handleSignUp,
     signOut: handleSignOut,
