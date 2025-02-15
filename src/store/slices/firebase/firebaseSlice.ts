@@ -33,15 +33,7 @@ const initialState: FirebaseState = {
   // Firebase state
   isInitialized: false,
   isInitializing: false,
-  app: null,
-  auth: null,
-  db: null,
-  storage: null,
-  analytics: null,
   user: null,
-  authService: null,
-  firestoreService: null,
-  storageService: null,
   cache: {
     documents: {},
     metadata: {},

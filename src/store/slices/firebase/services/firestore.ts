@@ -238,39 +238,68 @@ export class FirestoreService {
   }
 
   async toggleLike(
-    videoId: string, 
-    userId: string, 
+    videoId: string,
+    userId: string,
     type: 'like' | 'superLike' = 'like'
-  ): Promise<{ action: 'add' | 'remove', like?: Like, likeId?: string }> {
+  ): Promise<{ action: 'add' | 'remove'; like?: Like; likeId?: string }> {
     logger.info('Toggling like', { videoId, userId, type });
     
-    try {
-      const likesRef = collection(this.db, Collections.LIKES);
-      const likeQuery = query(
-        likesRef,
-        where('videoId', '==', videoId),
-        where('userId', '==', userId),
-        limit(1)
-      );
+    // Check if like exists
+    const likes = await this.fetchVideoLikes(videoId);
+    const existingLike = likes.find(like => like.userId === userId);
 
-      const snapshot = await getDocs(likeQuery);
+    if (existingLike) {
+      // Remove like
+      await this.deleteDocument(Collections.LIKES, existingLike.id);
+      return { action: 'remove', likeId: existingLike.id };
+    } else {
+      // Add like
+      const like = await this.addDocument<Like>(Collections.LIKES, {
+        videoId,
+        userId,
+        type,
+        createdAt: Date.now()
+      });
+      return { action: 'add', like };
+    }
+  }
 
-      if (snapshot.empty) {
-        const like = await this.addDocument<Like>(Collections.LIKES, {
-          videoId,
-          userId,
-          type,
-          createdAt: Date.now()
-        });
-        return { action: 'add', like };
-      } else {
-        const likeId = snapshot.docs[0].id;
-        await this.deleteDocument(Collections.LIKES, likeId);
-        return { action: 'remove', likeId };
-      }
-    } catch (error) {
-      logger.error('Failed to toggle like', { videoId, userId, error });
-      throw error;
+  // Dislikes
+  async fetchVideoDislikes(videoId: string): Promise<Dislike[]> {
+    logger.info('Fetching video dislikes', { videoId });
+    return this.fetchDocuments<Dislike>(Collections.DISLIKES, {
+      where: [{
+        field: 'videoId',
+        operator: '==',
+        value: videoId
+      }]
+    });
+  }
+
+  async toggleDislike(
+    videoId: string,
+    userId: string,
+    type: 'dislike' | 'superDislike' = 'dislike'
+  ): Promise<{ action: 'add' | 'remove'; dislike?: Dislike; dislikeId?: string }> {
+    logger.info('Toggling dislike', { videoId, userId, type });
+    
+    // Check if dislike exists
+    const dislikes = await this.fetchVideoDislikes(videoId);
+    const existingDislike = dislikes.find(dislike => dislike.userId === userId);
+
+    if (existingDislike) {
+      // Remove dislike
+      await this.deleteDocument(Collections.DISLIKES, existingDislike.id);
+      return { action: 'remove', dislikeId: existingDislike.id };
+    } else {
+      // Add dislike
+      const dislike = await this.addDocument<Dislike>(Collections.DISLIKES, {
+        videoId,
+        userId,
+        type,
+        createdAt: Date.now()
+      });
+      return { action: 'add', dislike };
     }
   }
 

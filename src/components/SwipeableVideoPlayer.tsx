@@ -230,7 +230,7 @@ export function SwipeableVideoPlayer({ currentVideo }: SwipeableVideoPlayerProps
                 />
               </ErrorBoundary>
               <ErrorBoundary>
-                <VideoOverlay metadata={currentVideo.metadata} />
+                <VideoOverlay video={currentVideo} />
               </ErrorBoundary>
               <ErrorBoundary>
                 <CommentPanel videoId={currentVideo.video.id} />

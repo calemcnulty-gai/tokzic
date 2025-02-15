@@ -14,7 +14,6 @@ import type { User } from '../types/auth';
 import type { RouteType } from './slices/navigationSlice';
 import type { VideoData, VideoWithMetadata } from '../types/video';
 import type { VideoMetadata, Comment, Like, Dislike, Tip } from '../types/firestore';
-import type { InteractionLoadingState } from '../types/interactions';
 import type { UIState } from './slices/uiSlice';
 import type {
   FirestoreService,
@@ -22,30 +21,58 @@ import type {
   AuthService,
 } from './slices/firebase/services';
 
+// Interaction State Types
+export interface InteractionState {
+  comments: Record<string, Comment[]>;
+  likes: Record<string, Like[]>;
+  dislikes: Record<string, Dislike[]>;
+  tips: Record<string, Tip[]>;
+  loadingState: LoadingState;
+  loadingStates: {
+    comments: LoadingState;
+    likes: LoadingState;
+    tips: LoadingState;
+  };
+  errors: {
+    comments?: string;
+    like?: string;
+    dislike?: string;
+  };
+}
+
+// Video Interaction State
+export interface VideoInteractionState {
+  isLiked: boolean;
+  isDisliked: boolean;
+  likeCount: number;
+  dislikeCount: number;
+  comments: Comment[];
+  metrics: {
+    likeCount: number;
+    dislikeCount: number;
+    commentCount: number;
+    tipCount: number;
+    lastInteractionTime: number;
+  };
+  loadingState: LoadingState;
+}
+
 // Root State Types
 export interface RootState {
   auth: AuthState;
   video: VideoState;
   gesture: GestureState;
   navigation: NavigationState;
-  interaction: import('../types/interactions').InteractionState;
+  interaction: InteractionState;
   ui: UIState;
   firebase: FirebaseState;
 }
 
 // Firebase State Type
 export interface FirebaseState extends LoadingState {
-  app: FirebaseApp | null;
-  auth: Auth | null;
-  db: Firestore | null;
-  storage: FirebaseStorage | null;
-  analytics: Analytics | null;
   isInitialized: boolean;
   isInitializing: boolean;
   user: User | null;
-  authService: AuthService | null;
-  firestoreService: FirestoreService | null;
-  storageService: StorageService | null;
   cache: CacheState;
   uploadProgress: Record<string, number>;
   loadingStates: {

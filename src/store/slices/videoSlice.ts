@@ -49,7 +49,7 @@ interface VideoPlayerState {
 
 interface VideoState extends LoadingState {
   videos: VideoWithMetadata[];
-  currentVideo: VideoWithMetadata | null;
+  currentVideo: VideoWithMetadata;
   currentIndex: number;
   lastVisible: QueryDocumentSnapshot<DocumentData, DocumentData> | null;
   isRefreshing: boolean;
@@ -77,7 +77,7 @@ interface VideoState extends LoadingState {
   };
 }
 
-const initialState: VideoState = {
+export const initialState: VideoState = {
   // LoadingState
   isLoading: false,
   isLoaded: false,
@@ -85,12 +85,30 @@ const initialState: VideoState = {
   
   // Video specific state
   videos: [],
-  currentVideo: null,
+  currentVideo: {
+    video: {
+      id: '',
+      url: '',
+      createdAt: Date.now(),
+    },
+    metadata: {
+      id: '',
+      creatorId: '',
+      createdAt: Date.now(),
+      stats: {
+        views: 0,
+        likes: 0,
+        dislikes: 0,
+        comments: 0,
+        tips: 0,
+      }
+    }
+  },
   currentIndex: 0,
   lastVisible: null,
   isRefreshing: false,
-  isAtStart: false,
-  isAtEnd: false,
+  isAtStart: true,
+  isAtEnd: true,
   isInitialized: false,
   isVideosLoaded: false,
   isMetadataLoaded: false,
@@ -104,7 +122,7 @@ const initialState: VideoState = {
     lastSwipeTime: 0,
   },
   player: {
-    isPlaying: true,
+    isPlaying: false,
     isMuted: false,
     volume: 1,
     position: 0,
@@ -709,7 +727,25 @@ const videoSlice = createSlice({
         if (!action.payload.videos.length) {
           logger.warn('No videos returned during initialization');
           state.videos = [];
-          state.currentVideo = null;
+          state.currentVideo = {
+            video: {
+              id: '',
+              url: '',
+              createdAt: Date.now(),
+            },
+            metadata: {
+              id: '',
+              creatorId: '',
+              createdAt: Date.now(),
+              stats: {
+                views: 0,
+                likes: 0,
+                dislikes: 0,
+                comments: 0,
+                tips: 0,
+              }
+            }
+          };
           state.currentIndex = 0;
           state.isLoading = false;
           state.isAtStart = true;

@@ -135,7 +135,7 @@ export const selectAllLoadingStates = (state: RootState) =>
   state.ui.loadingStates;
 
 export const selectIsProcessingLike = (state: RootState): boolean => 
-  state.ui.loadingStates.video.isLoading;
+  state.interaction.loadingStates.likes.isLoading;
 
 export const selectIsProcessingTip = (state: RootState): boolean => 
   state.ui.loadingStates.metadata.isLoading;

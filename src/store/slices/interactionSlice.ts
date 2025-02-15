@@ -9,10 +9,10 @@ import type {
 import type { 
   RootState, 
   AppDispatch, 
-  ThunkConfig
+  ThunkConfig,
+  InteractionState
 } from '../types';
 import type {
-  InteractionState,
   LikePayload,
   DislikePayload,
   InteractionResponse,
@@ -129,7 +129,12 @@ export const toggleLike = createAsyncThunk<
 >('interaction/toggleLike', async ({ videoId, userId, type = 'like' }, { dispatch }) => {
   try {
     const result = await (dispatch as AppDispatch)(toggleFirebaseLike({ videoId, userId, type })).unwrap();
-    return { ...result, videoId };
+    return {
+      action: result.action,
+      videoId,
+      data: result.like,
+      id: result.action === 'add' ? result.like?.id : result.likeId
+    };
   } catch (error) {
     logger.error('Failed to toggle like', { videoId, error });
     throw error;
@@ -346,18 +351,19 @@ const interactionSlice = createSlice({
           likeId: action.payload.id
         });
         state.loadingState.isLoading = false;
-        if (action.payload.action === 'add' && 'data' in action.payload) {
-          if (!state.likes[action.payload.videoId]) {
-            state.likes[action.payload.videoId] = [];
-          }
-          if (action.payload.data) {
-            state.likes[action.payload.videoId].push(action.payload.data);
-          }
-        } else if (action.payload.action === 'remove') {
-          if (state.likes[action.payload.videoId]) {
-            state.likes[action.payload.videoId] = state.likes[action.payload.videoId]
-              .filter(like => like.id !== action.payload.id);
-          }
+        
+        // Initialize likes array if needed
+        if (!state.likes[action.payload.videoId]) {
+          state.likes[action.payload.videoId] = [];
+        }
+
+        if (action.payload.action === 'add' && action.payload.data) {
+          // Add new like
+          state.likes[action.payload.videoId].push(action.payload.data);
+        } else if (action.payload.action === 'remove' && action.payload.id) {
+          // Remove like by id
+          state.likes[action.payload.videoId] = state.likes[action.payload.videoId]
+            .filter(like => like.id !== action.payload.id);
         }
       })
       .addCase(toggleLike.rejected, (state, action) => {

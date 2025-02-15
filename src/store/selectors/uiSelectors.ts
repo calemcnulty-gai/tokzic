@@ -40,10 +40,7 @@ export const selectActiveModal = createSelector(
 );
 
 // Toast selectors
-export const selectAllToasts = createSelector(
-  [selectToasts],
-  (toasts) => toasts
-);
+export const selectAllToasts = selectToasts;
 
 export const selectLatestToast = createSelector(
   [selectToasts],
@@ -51,10 +48,7 @@ export const selectLatestToast = createSelector(
 );
 
 // Loading state selectors
-export const selectAllLoadingStates = createSelector(
-  [selectLoadingStates],
-  (loadingStates) => loadingStates
-);
+export const selectAllLoadingStates = selectLoadingStates;
 
 // Combined loading states selector
 export const selectCombinedLoadingState = createSelector(

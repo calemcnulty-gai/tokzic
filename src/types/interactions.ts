@@ -11,45 +11,6 @@ export interface InteractionResult<T> {
   error?: string;
 }
 
-// Use the central LoadingState type
-export type InteractionLoadingState = LoadingState;
-
-export interface InteractionMetrics {
-  likeCount: number;
-  dislikeCount: number;
-  commentCount: number;
-  tipCount: number;
-  lastInteractionTime?: number;
-}
-
-export interface VideoInteractionState {
-  isLiked: boolean;
-  isDisliked: boolean;
-  likeCount: number;
-  dislikeCount: number;
-  comments: Comment[];
-  metrics: InteractionMetrics;
-  loadingState: InteractionLoadingState;
-}
-
-export interface InteractionState {
-  comments: Record<string, Comment[]>;
-  likes: Record<string, Like[]>;
-  dislikes: Record<string, Dislike[]>;
-  tips: Record<string, Tip[]>;
-  loadingState: InteractionLoadingState;
-  loadingStates: {
-    comments: LoadingState;
-    likes: LoadingState;
-    tips: LoadingState;
-  };
-  errors: {
-    comments?: string;
-    like?: string;
-    dislike?: string;
-  };
-}
-
 // Base payload type for all interactions
 export interface InteractionPayload {
   videoId: string;
@@ -97,19 +58,4 @@ export interface VideoInteractionResponse {
     dislike?: Dislike;
   };
   error?: string;
-}
-
-// Loading state types
-export interface InteractionLoadingStates {
-  isLoadingComments: boolean;
-  isSubmittingComment: boolean;
-  isProcessingLike: boolean;
-  isProcessingTip: boolean;
-}
-
-// UI State for interactions
-export interface InteractionUIState {
-  isCommentsVisible: boolean;
-  isTipSelectorVisible: boolean;
-  loadingStates: InteractionLoadingStates;
 } 

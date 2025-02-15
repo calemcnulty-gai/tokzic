@@ -1,6 +1,7 @@
 import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from '../';
 import type { VideoMetadata } from '../../types/firestore';
+import { initialState } from '../slices/videoSlice';
 
 // Base selectors
 const selectVideoState = (state: RootState) => state.video;
@@ -12,17 +13,20 @@ const selectErrors = (state: RootState) => state.video.errors;
 // Memoized selectors
 export const selectCurrentVideo = createSelector(
   [selectVideos, selectCurrentIndex],
-  (videos, currentIndex) => videos[currentIndex]
+  (videos, currentIndex) => videos[currentIndex] || videos[0] || initialState.currentVideo
 );
 
 export const selectCurrentVideoMetadata = createSelector(
   [selectCurrentVideo],
-  (currentVideo) => currentVideo?.metadata
+  (currentVideo) => currentVideo.metadata
 );
 
 export const selectVideoLoadingState = createSelector(
   [selectLoadingStates],
-  (loadingStates) => loadingStates
+  (loadingStates) => ({
+    ...loadingStates,
+    isReady: loadingStates.metadata.isLoaded && loadingStates.video.isLoaded
+  })
 );
 
 export const selectVideoErrors = createSelector(

@@ -1,57 +1,66 @@
 import { createSelector } from '@reduxjs/toolkit';
-import type { RootState } from '../';
-import type { VideoInteractionState } from '../../types/interactions';
+import type { RootState, VideoInteractionState } from '../types';
 import { selectUser } from '../slices/firebase/selectors';
 
 // Base selectors
 const selectInteractionState = (state: RootState) => state.interaction;
 const selectLoadingStates = (state: RootState) => state.interaction.loadingStates;
 
-// Data selectors
-export const selectVideoComments = (state: RootState, videoId: string) => 
-  state.interaction.comments[videoId] || [];
+// Data selectors with memoization
+export const selectVideoComments = createSelector(
+  [(state: RootState, videoId: string) => state.interaction.comments[videoId]],
+  (comments) => comments || []
+);
 
-export const selectVideoLikes = (state: RootState, videoId: string) =>
-  state.interaction.likes[videoId] || [];
+export const selectVideoLikes = createSelector(
+  [(state: RootState, videoId: string) => state.interaction.likes[videoId]],
+  (likes) => likes || []
+);
 
-export const selectVideoTips = (state: RootState, videoId: string) =>
-  state.interaction.tips[videoId] || [];
+export const selectVideoTips = createSelector(
+  [(state: RootState, videoId: string) => state.interaction.tips[videoId]],
+  (tips) => tips || []
+);
+
+export const selectVideoDislikes = createSelector(
+  [(state: RootState, videoId: string) => state.interaction.dislikes[videoId]],
+  (dislikes) => dislikes || []
+);
+
+export const selectVideoMetrics = createSelector(
+  [selectVideoLikes, selectVideoDislikes, selectVideoComments, selectVideoTips],
+  (likes, dislikes, comments, tips) => ({
+    likeCount: likes.length,
+    dislikeCount: dislikes.length,
+    commentCount: comments.length,
+    tipCount: tips.length,
+    lastInteractionTime: Math.max(
+      ...likes.map(l => l.createdAt),
+      ...dislikes.map(d => d.createdAt),
+      ...comments.map(c => c.createdAt),
+      0
+    )
+  })
+);
 
 export const selectVideoInteractionState = createSelector(
   [
-    selectInteractionState,
+    selectVideoLikes,
+    selectVideoDislikes,
+    selectVideoComments,
+    selectVideoMetrics,
     selectUser,
-    (_: RootState, videoId: string) => videoId
+    selectInteractionState,
   ],
-  (interactionState, user, videoId): VideoInteractionState => {
-    const likes = interactionState.likes[videoId] || [];
-    const dislikes = interactionState.dislikes[videoId] || [];
-    const comments = interactionState.comments[videoId] || [];
-    const tips = interactionState.tips[videoId] || [];
-    
-    const metrics = {
-      likeCount: likes.length,
-      dislikeCount: dislikes.length,
-      commentCount: comments.length,
-      tipCount: tips.length,
-      lastInteractionTime: Math.max(
-        ...likes.map(l => l.createdAt),
-        ...dislikes.map(d => d.createdAt),
-        ...comments.map(c => c.createdAt),
-        0
-      )
-    };
-    
-    return {
-      isLiked: user ? likes.some(like => like.userId === user.uid) : false,
-      isDisliked: user ? dislikes.some(dislike => dislike.userId === user.uid) : false,
-      likeCount: likes.length,
-      dislikeCount: dislikes.length,
-      comments,
-      metrics,
-      loadingState: interactionState.loadingState
-    };
-  }
+  (likes, dislikes, comments, metrics, user, interactionState): VideoInteractionState => ({
+    isLiked: user ? likes.some(like => like.userId === user.uid) : false,
+    isDisliked: user ? dislikes.some(dislike => dislike.userId === user.uid) : false,
+    likeCount: likes.length,
+    dislikeCount: dislikes.length,
+    comments,
+    metrics,
+    loadingState: interactionState.loadingState
+  })
 );
 
 // Loading state selectors

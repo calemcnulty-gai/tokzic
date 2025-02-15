@@ -1,8 +1,8 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../theme/ThemeProvider';
-import type { VideoMetadata } from '../../types/firestore';
+import type { VideoWithMetadata } from '../../types/video';
 import { createLogger } from '../../utils/logger';
 import { formatNumber } from '../../utils/format';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -24,20 +24,26 @@ import { signOut } from '../../store/slices/authSlice';
 const logger = createLogger('VideoOverlay');
 
 interface VideoOverlayProps {
-  metadata: VideoMetadata;
+  video: VideoWithMetadata;
 }
 
-export const VideoOverlay = React.memo(function VideoOverlay({ metadata }: VideoOverlayProps) {
+export const VideoOverlay = React.memo(function VideoOverlay({ video }: VideoOverlayProps) {
   const theme = useTheme();
   const dispatch = useAppDispatch();
+  const [localIsLiked, setLocalIsLiked] = useState(false);
+  const [localLikeCount, setLocalLikeCount] = useState(0);
 
   // Get all state from Redux using properly typed selectors
   const isOverlayVisible = useAppSelector(selectOverlayVisibility);
-  const interactionState = useAppSelector((state: RootState) => selectVideoInteractionState(state, metadata.id));
+  const interactionState = useAppSelector((state: RootState) => selectVideoInteractionState(state, video.video.id));
   const isProcessingLike = useAppSelector(selectIsProcessingLike);
   const isProcessingTip = useAppSelector(selectIsProcessingTip);
 
-  const { isLiked, isDisliked, likeCount, dislikeCount } = interactionState;
+  // Initialize local state from Redux state
+  React.useEffect(() => {
+    setLocalIsLiked(interactionState.isLiked);
+    setLocalLikeCount(interactionState.likeCount);
+  }, [interactionState.isLiked, interactionState.likeCount]);
 
   const handleLogout = async () => {
     try {
@@ -51,19 +57,27 @@ export const VideoOverlay = React.memo(function VideoOverlay({ metadata }: Video
 
   const handleLike = useCallback(async () => {
     try {
-      await dispatch(handleVideoLike({ videoId: metadata.id }));
+      // Optimistically update UI
+      setLocalIsLiked(prev => !prev);
+      setLocalLikeCount(prev => prev + (localIsLiked ? -1 : 1));
+      
+      // Actually perform the action
+      await dispatch(handleVideoLike({ videoId: video.video.id }));
     } catch (error) {
+      // Revert optimistic update on error
+      setLocalIsLiked(interactionState.isLiked);
+      setLocalLikeCount(interactionState.likeCount);
       logger.error('Failed to handle like', { error });
     }
-  }, [dispatch, metadata.id]);
+  }, [dispatch, video.video.id, localIsLiked, interactionState.isLiked, interactionState.likeCount]);
 
   const handleDislike = useCallback(async () => {
     try {
-      await dispatch(handleVideoDislike({ videoId: metadata.id }));
+      await dispatch(handleVideoDislike({ videoId: video.video.id }));
     } catch (error) {
       logger.error('Failed to handle dislike', { error });
     }
-  }, [dispatch, metadata.id]);
+  }, [dispatch, video.video.id]);
 
   if (!isOverlayVisible) return null;
 
@@ -80,10 +94,10 @@ export const VideoOverlay = React.memo(function VideoOverlay({ metadata }: Video
           <Icon 
             name="heart" 
             size={16} 
-            color={isLiked ? theme.colors.neon.pink : theme.colors.text.primary} 
+            color={localIsLiked ? theme.colors.neon.pink : theme.colors.text.primary} 
           />
           <Text style={[styles.statsText, { color: theme.colors.text.primary }]}>
-            {formatNumber(likeCount)}
+            {formatNumber(localLikeCount)}
           </Text>
         </View>
 
@@ -94,7 +108,7 @@ export const VideoOverlay = React.memo(function VideoOverlay({ metadata }: Video
             color={theme.colors.text.primary} 
           />
           <Text style={[styles.statsText, { color: theme.colors.text.primary }]}>
-            ${metadata.stats?.tips ?? 0}
+            ${video.metadata.stats?.tips ?? 0}
           </Text>
         </View>
 
@@ -105,7 +119,7 @@ export const VideoOverlay = React.memo(function VideoOverlay({ metadata }: Video
             color={theme.colors.text.primary} 
           />
           <Text style={[styles.statsText, { color: theme.colors.text.primary }]}>
-            {formatNumber(metadata.stats?.views ?? 0)}
+            {formatNumber(video.metadata.stats?.views ?? 0)}
           </Text>
         </View>
       </View>
@@ -126,9 +140,9 @@ export const VideoOverlay = React.memo(function VideoOverlay({ metadata }: Video
             disabled={isProcessingLike}
           >
             <Icon 
-              name={isLiked ? 'heart' : 'heart-outline'} 
+              name={localIsLiked ? 'heart' : 'heart-outline'} 
               size={28} 
-              color={isLiked ? theme.colors.neon.pink : theme.colors.text.primary} 
+              color={localIsLiked ? theme.colors.neon.pink : theme.colors.text.primary} 
             />
           </TouchableOpacity>
 

@@ -2,9 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import { VideoMetadataService } from '../../services/video-metadata';
 import { VideoInteractionService } from '../../services/video-interactions';
 import { createLogger } from '../../utils/logger';
-import type { VideoMetadata } from '../../types/firestore';
 import type { RootState } from '../types';
-import type { InteractionResult } from '../../types/interactions';
 
 const logger = createLogger('VideoThunks');
 const videoInteractionService = new VideoInteractionService();
